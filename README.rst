@@ -2,14 +2,14 @@
 pfdcm  v0.99
 ##############
 
-.. image:: https://badge.fury.io/py/pfcon.svg
-    :target: https://badge.fury.io/py/pfcon
+.. image:: https://badge.fury.io/py/pfdcm.svg
+    :target: https://badge.fury.io/py/pfdcm
 
-.. image:: https://travis-ci.org/FNNDSC/pfcon.svg?branch=master
-    :target: https://travis-ci.org/FNNDSC/pfcon
+.. image:: https://travis-ci.org/FNNDSC/pfdcm.svg?branch=master
+    :target: https://travis-ci.org/FNNDSC/pfdcm
 
 .. image:: https://img.shields.io/badge/python-3.5%2B-blue.svg
-    :target: https://badge.fury.io/py/pfcon
+    :target: https://badge.fury.io/py/pfdcm
 
 .. contents:: Table of Contents
 
@@ -17,18 +17,12 @@ pfdcm  v0.99
 Overview
 ********
 
-This repository provides ``pfcon`` -- a controlling service that speaks to remote ``pman`` and ``pfioh`` services.
+This repository provides ``pfdcm`` -- a controlling service that speaks to a PACS and handles DICOM data management.
 
-pfcon
+pfdcm
 =====
 
-Most simply, ``pfcon`` pushes local data to a remote location (by talking to a remote ``pfioh`` service), runs some process on this data in the remote space using ``pman``, and then copies the resultant data back to a local target space.
-
-It can be used to query and control the following (for example):
-
-- *state*: Is job <XYZ> still running?
-- *result*: What is the stdout (or stderr) from job <XYZ>?
-- *control*: Kill job <XYZ>
+Most simply, ``pfdcm`` provides a REST-type interface to querying a PACS as well as managing DICOM data received from a PACS.
 
 ************
 Installation
@@ -92,48 +86,48 @@ This docker has an entry point ``python3``. To enter the dock at a different ent
 
    docker run -ti --entrypoint /bin/bash fnndsc/ubuntu-python3
    
-Now, install ``pman`` and friends using ``pip``
+Now, 
 
 .. code-block:: bash
 
    apt update && \
    apt install -y libssl-dev libcurl4-openssl-dev librtmp-dev && \
-   pip install pfcon
+   pip install pfdcm
    
 **If you do the above, remember to** ``commit`` **your changes to the docker image otherwise they'll be lost when you remove the dock instance!**
 
 .. code-block:: bash
 
-  docker commit <container-ID> local/ubuntu-python3-pfcon
+  docker commit <container-ID> local/ubuntu-python3-pfdcm
   
  where ``<container-ID>`` is the ID of the above container.
   
 
-Using the ``fnndsc/pfcon`` dock
+Using the ``fnndsc/pfdcm`` dock
 ===============================
 
-The easiest option however, is to just use the ``fnndsc/pfcon`` dock.
+The easiest option however, is to just use the ``fnndsc/pfdcm`` dock.
 
 .. code-block:: bash
 
-    docker pull fnndsc/pfcon
+    docker pull fnndsc/pfdcm
     
 and then run
 
 .. code-block:: bash
 
-    docker run --name pfcon -v /home:/Users --rm -ti fnndsc/pfcon --forever --httpResponse
+    docker run --name pfdcm -v /home:/Users --rm -ti fnndsc/pfdcm --forever --httpResponse
 
 *****
 Usage
 *****
 
-For usage of  ``pfcon``, consult the relevant wiki pages.
+For usage of  ``pfdcm``, consult the relevant wiki pages.
 
-``pfcon`` usage
+``pfdcm`` usage
 ===============
 
-For ``pfcon`` detailed information, see the `pfcon wiki page <https://github.com/FNNDSC/pfcon/wiki/pfcon-overview>`_.
+For ``pfdcm`` detailed information, see the `pfdcm wiki page <https://github.com/FNNDSC/pfdcm/wiki/pfdcm-overview>`_.
 
 
 
