@@ -7,7 +7,7 @@
 #
 # For example if building a local version, you could do:
 #
-#   docker build -t local/pfcon .
+#   docker build -t local/pfdcm .
 #
 # In the case of a proxy (located at 192.168.13.14:3128), do:
 #
@@ -15,11 +15,11 @@
 #
 # To run an interactive shell inside this container, do:
 #
-#   docker run -ti --entrypoint /bin/bash local/pfcon
+#   docker run -ti --entrypoint /bin/bash local/pfdcm
 #
 # To pass an env var HOST_IP to container, do:
 #
-#   docker run -ti -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pfcon
+#   docker run -ti -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pfdcm
 #
 
 FROM fnndsc/ubuntu-python3:latest
