@@ -49,49 +49,6 @@ parser.add_argument(
     action  = 'store_true',
     default = False
 )
-parser.add_argument(
-    '--listenPort',
-    help    = 'port for DICOM listener',
-    dest    = str_listenPort,
-    action  = 'store',
-    default = '10402'
-)
-parser.add_argument(
-    '--tmpDir',
-    help    = 'tmp dir to use',
-    dest    = str_tmpDir,
-    action  = 'store',
-    default = '/tmp'
-)
-parser.add_argument(
-    '--logDir',
-    help    = 'log dir to use',
-    dest    = str_logDir,
-    action  = 'store',
-    default = '/incoming/log'
-)
-parser.add_argument(
-    '--dataDir',
-    help    = 'data dir to use',
-    dest    = str_logDir,
-    action  = 'store',
-    default = '/incoming/data'
-)
-parser.add_argument(
-    '--listenServer',
-    help    = 'app to intercept DICOM tansmissions',
-    dest    = str_listenServer,
-    action  = 'store',
-    default = '/usr/local/bin/px-listen'
-)
-parser.add_argument(
-    '--storescp',
-    help    = 'storescp app',
-    dest    = str_storescp,
-    action  = 'store',
-    default = '/usr/bin/storescp'
-)
-
 
 args, unknown   = parser.parse_known_args()
 
