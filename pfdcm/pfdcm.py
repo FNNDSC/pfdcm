@@ -513,6 +513,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         The PACS Q/R handler.
         """
 
+        b_status        = True
         d_query         = {}
         d_request       = {}
         d_meta          = {}
@@ -531,19 +532,33 @@ class StoreHandler(BaseHTTPRequestHandler):
                 Gd_tree.copy(startPath  = str_path, destination = T)
                 d_tree                  = dict(T.snode_root)
                 d_service               = d_tree['PACS'][d_meta['PACS']]
+            else:
+                return {
+                    'status':   False,
+                    'msg':      'Invalid PACS specified.'
+                }
             if 'do' in d_meta:
                 if 'on' in d_meta:
                     d_on        = d_meta['on']
                 if d_meta['do'] == 'query':
                     d_service['executable'] = Gd_tree.cat('/bin/findscu')
                     d_ret       = pypx.find({**d_service, **d_on})
+                    if d_ret['status'] == 'error' or not len(d_ret['data']):
+                        b_status        = False
                 if d_meta['do'] == 'retrieve':
                     d_service['executable'] = Gd_tree.cat('/bin/movescu')
                     # pudb.set_trace()
                     d_ret       = pypx.move({**d_service, **d_on})
+                    if d_ret['status'] == 'error':
+                        b_status        = False
+            else:
+                return {
+                    'status':   False,
+                    'msg':      'No "do" directive specified.'
+                }
 
         return {
-                'status':       True,
+                'status':       b_status,
                 d_meta['do']:    d_ret
                 }
 
