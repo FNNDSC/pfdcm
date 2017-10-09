@@ -11,18 +11,18 @@ def readme():
         return f.read()
 
 setup(
-      name             =   'pfcon',
-      version          =   '1.3.2',
-      description      =   '(Python) Process and File Controller',
+      name             =   'pfdcm',
+      version          =   '0.99.1',
+      description      =   'Path and File DICOM',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
       author_email     =   'rudolph.pienaar@gmail.com',
       url              =   'https://github.com/FNNDSC/pfcon',
       packages         =   ['pfcon'],
-      install_requires =   ['pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfurl'],
+      install_requires =   ['pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfdcm'],
       test_suite       =   'nose.collector',
       tests_require    =   ['nose'],
-      scripts          =   ['bin/pfcon'],
+      scripts          =   ['bin/pfdcm'],
       license          =   'MIT',
       zip_safe         =   False
      )

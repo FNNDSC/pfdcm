@@ -38,7 +38,8 @@ RUN apt-get update \
   && apt-get install -y libssl-dev libcurl4-openssl-dev bsdmainutils vim net-tools inetutils-ping \
   && apt-get install -y xinetd                                        \
   && apt-get install -y dcmtk                                         \
-  && pip3 install pypx==0.10
+  && pip3 install pypx==0.10                                          \
+  && pip3 install pfdcm==0.99.1
 
 COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
 RUN chmod 777 /dock                                                   \
