@@ -18,7 +18,7 @@ setup(
       author           =   'Rudolph Pienaar',
       author_email     =   'rudolph.pienaar@gmail.com',
       url              =   'https://github.com/FNNDSC/pfcon',
-      packages         =   ['pfcon'],
+      packages         =   ['pfdcm'],
       install_requires =   ['pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfdcm'],
       test_suite       =   'nose.collector',
       tests_require    =   ['nose'],
