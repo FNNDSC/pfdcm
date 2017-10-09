@@ -23,6 +23,7 @@ import  psutil
 import  os
 import  multiprocessing
 import  pfurl
+import  subprocess
 
 import  pudb
 
@@ -47,15 +48,27 @@ Gd_internalvar  = {
         'state':    None
     },
 
-    'executables': {
-        'findscu':      '/usr/local/bin/findscu',
-        'movescu':      '/usr/local/bin/movescu',
-        'echoscu':      '/usr/local/bin/echoscu'
+    'xinetd': {
+        'servicePort':  '10402',
+        'tmpDir':       '/dicom/tmp',
+        'logDir':       '/dicom/log',
+        'dataDir':      '/dicom/data',
+        'file':         '/etc/xinetd.d/dicomlistener'
     },
 
-    'service':  {
+    'bin': {
+        'storescu':     '/usr/local/bin/storescu',
+        'storescp':     '/usr/local/bin/storescp',
+        'findscu':      '/usr/local/bin/findscu',
+        'movescu':      '/usr/local/bin/movescu',
+        'echoscu':      '/usr/local/bin/echoscu',
+        'listener':     '/usr/local/bin/px-listen'    
+    },
+
+    'PACS':  {
         'help' : {
             'aet':              'AETITLE',
+            'aet_listener':     'AETITLE_LISTENER',
             'aec':              'CALLEDAETITLE',
             'server_ip':        '127.0.0.1',
             'server_port':      '104'
@@ -72,15 +85,62 @@ class StoreHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         """
         """
-        b_test          = False
         self.__name__   = 'StoreHandler'
         self.pp         = pprint.PrettyPrinter(indent=4)
 
-        for k,v in kwargs.items():
-            if k == 'test': b_test  = True
+        # pudb.set_trace()
 
-        if not b_test:
+        if len(args) == 3:
+            self.server     = args[2]
+
+        b_test      = False
+        b_xinetd    = False
+        for k,v in kwargs.items():
+            if k == 'test':     b_test      = v
+            if k == 'xinetd':   b_xinetd    = v
+
+        if not b_test and not b_xinetd:
             BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+
+        if b_xinetd:
+            self.xinetd_everything_process()
+
+    def df_print(self, adict):
+        """
+        Return a nicely formatted string representation of a dictionary
+        """
+        return self.pp.pformat(adict).strip()
+
+    def xinetd_everything_process(self, *args, **kwargs):
+        """
+        Start the xinet service 
+        """
+
+        d_ret = {}
+
+        self.qprint('Creating service file...', comms = 'status')
+        d_ret['fileCreate'] = self.xinetd_fileCreate_process()
+        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+
+        self.qprint('Installing service file...', comms = 'status')
+        d_ret['fileInstall'] = self.xinetd_fileInstall_process()
+        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+
+        self.qprint('Making directories...', comms = 'status')
+        d_ret['serviceDirs'] = self.xinetd_serviceDirs_process()
+        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+
+        self.qprint('Restarting xinetd...', comms = 'status')
+        d_ret['service'] = self.xinetd_service_process()
+        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+
+        return {
+            'status':   d_ret['fileCreate']['status']   and \
+                        d_ret['fileInstall']['status']  and \
+                        d_ret['serviceDirs']['status']  and \
+                        d_ret['service']['status'],
+            'd_ret':    d_ret
+        }
 
     def qprint(self, msg, **kwargs):
         """
@@ -197,13 +257,15 @@ class StoreHandler(BaseHTTPRequestHandler):
                 b_status                = True
 
             if 'set' in d_meta.keys():
+                b_tree          = False
+                # pudb.set_trace()
                 try:
                     d_set       = json.loads(d_meta['set'])
-                    b_tree      = False
                 except:
                     str_set     = json.dumps(d_meta['set'])
                     d_set       = json.loads(str_set)
-                    b_tree      = True
+                    if isinstance(d_set, dict):
+                        b_tree  = True
                 if b_tree:
                     D       = C_stree()
                     D.initFromDict(d_set)
@@ -273,9 +335,182 @@ class StoreHandler(BaseHTTPRequestHandler):
             d_ret   = self.internalctl_varprocess(d_meta = d_meta)
         return d_ret
 
-    def PACSquery_process(self, *args, **kwargs):
+
+    def xinetd_fileCreate_process(self, *args, **kwargs):
         """
-        The PACS query handler.
+        Process behaviour related to the xinetd service.
+        """
+
+        # pudb.set_trace()
+
+        b_status    = False
+        str_file    = '/tmp/dicomlistener'
+        str_stdout  = ""
+        str_stderr  = ""
+        str_xinetd  = """
+        service dicomlistener 
+        {
+            disable             = no
+            socket_type         = stream
+            wait                = no
+            user                = root
+            server              = %s
+            server_args         = -e %s -t %s -l %s -d %s
+            type                = UNLISTED
+            port                = %s
+            bind                = 0.0.0.0  
+        } """ % (
+            Gd_tree.cat('/bin/listener'),
+            Gd_tree.cat('/bin/storescp'),
+            Gd_tree.cat('/xinetd/tmpDir'),
+            Gd_tree.cat('/xinetd/logDir'),
+            Gd_tree.cat('/xinetd/dataDir'),
+            Gd_tree.cat('/xinetd/servicePort')
+        )
+
+        FILE    = open(str_file, 'w')
+        try:
+            FILE.write(str_xinetd)
+            b_status    = True
+        except:
+            b_status    = False
+
+        FILE.close()
+        return {
+            'status':           b_status,
+            'fileContents':     str_xinetd,
+            'file':             str_file
+        }
+
+    def xinetd_fileInstall_process(self, *args, **kwargs):
+        """
+        Process behaviour related to the xinetd service.
+        """
+
+        b_status    = False
+        d_create    = self.xinetd_fileCreate_process(*args, **kwargs)
+        if d_create['status']:
+           
+            try:
+                result = subprocess.run('sudo mv %s %s' % (d_create['file'],
+                                                           Gd_tree.cat('/xinetd/file')),
+                            shell   = True,
+                            stdout  = subprocess.PIPE,
+                            stderr  = subprocess.PIPE
+                            )
+                b_status    = True
+            except subprocess.CalledProcessError as err:
+                b_status    = False
+
+            str_stdout  = result.stdout.decode('utf-8'),
+            str_stderr  = result.stderr.decode('utf-8')
+            if len(str_stderr):
+                b_status    = False
+
+        return {
+            'status':   b_status,
+            'stdout':   str_stdout,
+            'stderr':   str_stderr
+        }
+
+    def xinetd_serviceDirs_process(self, *args, **kwargs):
+        """
+        Process behaviour related to the xinetd service.
+        """
+
+        b_status    = False
+        d_create    = self.xinetd_fileCreate_process(*args, **kwargs)
+        if d_create['status']:
+            try:
+                result = subprocess.run('sudo mkdir -p %s %s %s' % \
+                                                          (
+                                                           Gd_tree.cat('/xinetd/tmpDir'),
+                                                           Gd_tree.cat('/xinetd/logDir'),
+                                                           Gd_tree.cat('/xinetd/dataDir')
+                                                           ),
+                            shell   = True,
+                            stdout  = subprocess.PIPE,
+                            stderr  = subprocess.PIPE
+                            )
+                b_status    = True
+            except subprocess.CalledProcessError as err:
+                b_status    = False
+
+            str_stdout  = result.stdout.decode('utf-8'),
+            str_stderr  = result.stderr.decode('utf-8')
+            if len(str_stderr):
+                b_status    = False
+
+        return {
+            'dirs':     (
+                            Gd_tree.cat('/xinetd/tmpDir'),
+                            Gd_tree.cat('/xinetd/logDir'),
+                            Gd_tree.cat('/xinetd/dataDir')
+                        ),
+            'status':   b_status,
+            'stdout':   str_stdout,
+            'stderr':   str_stderr
+        }
+
+    def xinetd_service_process(self, *args, **kwargs):
+        """
+        Restart the xinet daemon
+        """
+        b_status    = False
+        try:
+            result = subprocess.run('sudo /etc/init.d/xinetd restart',
+                        shell   = True,
+                        stdout  = subprocess.PIPE,
+                        stderr  = subprocess.PIPE
+                        )
+            b_status    = True
+        except subprocess.CalledProcessError as err:
+            b_status    = False
+
+        str_stdout  = result.stdout.decode('utf-8'),
+        str_stderr  = result.stderr.decode('utf-8')
+        if len(str_stderr):
+            b_status    = False
+
+        return {
+            'status':   b_status,
+            'stdout':   str_stdout,
+            'stderr':   str_stderr
+        }
+
+    def xinetd_process(self, *args, **kwargs):
+        """
+        Process behaviour related to the xinetd service.
+        """
+        d_request       = {}
+        d_meta          = {}
+        # The return from this method
+        d_ret           = {}
+        for k,v in kwargs.items():
+            if k == 'request':          d_request           = v
+
+        # pudb.set_trace()
+        d_meta          = d_request['meta']
+        if 'object' in d_meta and 'do' in d_meta:
+            if d_meta['object'] == 'file' and d_meta['do'] == 'create':
+                d_ret = self.xinetd_fileCreate_process(*args, **kwargs)
+            if d_meta['object'] == 'file' and d_meta['do'] == 'install':
+                d_ret = self.xinetd_fileInstall_process(*args, **kwargs)
+            if d_meta['object'] == 'service' and d_meta['do'] == 'restart':
+                d_ret = self.xinetd_service_process(*args, **kwargs)
+            if d_meta['object'] == 'service' and d_meta['do'] == 'mkdirs':
+                d_ret = self.xinetd_serviceDirs_process(*args, **kwargs)
+            if d_meta['object'] == 'service' and d_meta['do'] == 'everything':
+                d_ret = self.xinetd_everything_process(*args, **kwargs)
+
+        return {
+            'status':   d_ret['status'],
+            'd_ret':    d_ret
+        }
+
+    def PACSinteract_process(self, *args, **kwargs):
+        """
+        The PACS Q/R handler.
         """
 
         d_query         = {}
@@ -288,22 +523,28 @@ class StoreHandler(BaseHTTPRequestHandler):
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
 
-        pudb.set_trace()
+        # pudb.set_trace()
         d_meta          = d_request['meta']
-        if 'service' in d_meta:
-            str_path    = '/service/' + d_meta['service']
+        if 'PACS' in d_meta:
+            str_path    = '/PACS/' + d_meta['PACS']
             if Gd_tree.isdir(str_path):
                 Gd_tree.copy(startPath  = str_path, destination = T)
                 d_tree                  = dict(T.snode_root)
-                d_service               = d_tree['service'][d_meta['service']]
-                d_service['executable'] = '/usr/bin/findscu'
-            if 'query' in d_meta:
-                d_query     = d_meta['query']
-                d_ret       = pypx.find({**d_service, **d_query})
+                d_service               = d_tree['PACS'][d_meta['PACS']]
+            if 'do' in d_meta:
+                if 'on' in d_meta:
+                    d_on        = d_meta['on']
+                if d_meta['do'] == 'query':
+                    d_service['executable'] = Gd_tree.cat('/bin/findscu')
+                    d_ret       = pypx.find({**d_service, **d_on})
+                if d_meta['do'] == 'retrieve':
+                    d_service['executable'] = Gd_tree.cat('/bin/movescu')
+                    # pudb.set_trace()
+                    d_ret       = pypx.move({**d_service, **d_on})
 
         return {
-                'status':   True,
-                'query':    d_ret
+                'status':       True,
+                d_meta['do']:    d_ret
                 }
 
     def hello_process(self, *args, **kwargs):
