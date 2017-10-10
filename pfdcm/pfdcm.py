@@ -22,7 +22,6 @@ import  socket
 import  psutil
 import  os
 import  multiprocessing
-import  pfurl
 import  subprocess
 
 import  pudb
