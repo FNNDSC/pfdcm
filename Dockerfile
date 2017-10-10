@@ -7,7 +7,7 @@
 #
 # For example if building a local version, you could do:
 #
-#   docker build -t local/pfdcm .
+#   docker build --build-arg UID=$UID -t local/pfdcm .
 #
 # In the case of a proxy (located at 192.168.13.14:3128), do:
 #
