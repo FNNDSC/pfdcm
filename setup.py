@@ -12,7 +12,7 @@ def readme():
 
 setup(
       name             =   'pfdcm',
-      version          =   '0.99.2',
+      version          =   '0.99.3',
       description      =   'Path and File DICOM',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
