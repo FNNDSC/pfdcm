@@ -54,7 +54,7 @@ args, unknown   = parser.parse_known_args()
 
 if __name__ == '__main__':
     try:
-        fname   = 'pfcon_do(args, unknown)'
+        fname   = 'pfdcm_do(args, unknown)'
         str_cmd = eval(fname)
         os.system(str_cmd)
     except:
