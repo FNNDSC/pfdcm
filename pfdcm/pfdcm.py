@@ -81,6 +81,44 @@ class StoreHandler(BaseHTTPRequestHandler):
 
     b_quiet     = False
 
+    def initPACS(self, *args, **kwargs):
+        """
+        Call the internal 'set' on the '/PACS' path. 
+
+        Typically this method is only called from the base constructor
+        and handles the case when a PACS is set directly from the 
+        calling command line.
+
+        Side effects:
+            - Add to the internal '/PACS' variable
+            - Run the valueReplace on possible %HOST_IP
+        """
+        d_setPACS   = {}
+        str_setPACS = ''
+
+        for k, v in kwargs.items():
+            if k == 'setPACS':  str_setPACS = v
+
+        try:
+            d_setPACS   = json.loads(str_setPACS)
+        except:
+            return {
+                'status':   False,
+                'msg':      'Invalid setPACS construct.'
+            }
+
+        # Process the setPACS
+        self.internalctl_varprocess(d_meta = {
+            'var':  '/PACS',
+            'set':  d_setPACS
+        })
+
+        # finally process any valueReplace
+        self.internalctl_varprocess(d_meta = {
+            'var':  '%HOST_IP',
+            'valueReplace': 'ENV'
+        })
+
     def __init__(self, *args, **kwargs):
         """
         """
@@ -91,6 +129,9 @@ class StoreHandler(BaseHTTPRequestHandler):
 
         if len(args) == 3:
             self.server     = args[2]
+            if len(self.server.args['setPACS']):
+                self.initPACS(setPACS = self.server.args['setPACS'])
+                self.server.args['setPACS'] = ''
 
         b_test      = False
         b_xinetd    = False
@@ -245,7 +286,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         str_var     = d_meta['var']
 
         T           = C_stree()
-
+        # pudb.set_trace()
         if d_meta:
             if 'get' in d_meta.keys():
                 if Gd_tree.isdir(str_var):
