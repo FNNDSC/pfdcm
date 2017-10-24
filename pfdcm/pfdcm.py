@@ -160,19 +160,23 @@ class StoreHandler(BaseHTTPRequestHandler):
 
         self.qprint('Creating service file...', comms = 'status')
         d_ret['fileCreate'] = self.xinetd_fileCreate_process()
-        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+        self.qprint('d_ret["fileCreate"] =\n%s' %\
+                self.df_print(d_ret['fileCreate']), comms = 'status' )
 
         self.qprint('Installing service file...', comms = 'status')
         d_ret['fileInstall'] = self.xinetd_fileInstall_process()
-        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+        self.qprint('d_ret["fileInstall"] =\n%s' %\
+                self.df_print(d_ret['fileInstall']), comms = 'status' )
 
         self.qprint('Making directories...', comms = 'status')
         d_ret['serviceDirs'] = self.xinetd_serviceDirs_process()
-        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+        self.qprint('d_ret["serviceDirs"] =\n%s' %\
+                self.df_print(d_ret['serviceDirs']), comms = 'status' )
 
         self.qprint('Restarting xinetd...', comms = 'status')
         d_ret['service'] = self.xinetd_service_process()
-        self.qprint('d_ret =\n%s' % self.df_print(d_ret), comms = 'status' )
+        self.qprint('d_ret["service"] =\n%s' %\
+                self.df_print(d_ret['service']), comms = 'status' )
 
         return {
             'status':   d_ret['fileCreate']['status']   and \
