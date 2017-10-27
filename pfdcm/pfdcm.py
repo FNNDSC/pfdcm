@@ -39,29 +39,32 @@ G_b_httpResponse            = False
 
 Gd_internalvar  = {
     'self': {
-        'name':         'pfdcm',
-        'version':      'undefined',
+        'name':             'pfdcm',
+        'version':          'undefined',
     },
 
     'jobstatus': {
-        'state':    None
+        'state':            None
     },
 
     'xinetd': {
-        'servicePort':  '10402',
-        'tmpDir':       '/dicom/tmp',
-        'logDir':       '/dicom/log',
-        'dataDir':      '/dicom/data',
-        'file':         '/etc/xinetd.d/dicomlistener'
+        'servicePort':      '10402',
+        'tmpDir':           '/dicom/tmp',
+        'logDir':           '/dicom/log',
+        'dataDir':          '/dicom/data',
+        'file':             '/etc/xinetd.d/dicomlistener',
+        'patient_mapDir':   '/dicom/log/patient_map',
+        'study_mapDir':     '/dicom/log/study_map',
+        'series_mapDir':    '/dicom/log/series_map'
     },
 
     'bin': {
-        'storescu':     '/usr/local/bin/storescu',
-        'storescp':     '/usr/local/bin/storescp',
-        'findscu':      '/usr/local/bin/findscu',
-        'movescu':      '/usr/local/bin/movescu',
-        'echoscu':      '/usr/local/bin/echoscu',
-        'listener':     '/usr/local/bin/px-listen'    
+        'storescu':         '/usr/local/bin/storescu',
+        'storescp':         '/usr/local/bin/storescp',
+        'findscu':          '/usr/local/bin/findscu',
+        'movescu':          '/usr/local/bin/movescu',
+        'echoscu':          '/usr/local/bin/echoscu',
+        'listener':         '/usr/local/bin/px-listen'    
     },
 
     'PACS':  {
