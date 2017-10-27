@@ -1,5 +1,5 @@
 ##############
-pfdcm  v0.99.3
+pfdcm  v0.99.4
 ##############
 
 .. image:: https://badge.fury.io/py/pfdcm.svg
