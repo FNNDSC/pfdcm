@@ -23,6 +23,7 @@ import  psutil
 import  os
 import  multiprocessing
 import  subprocess
+import  glob
 
 import  pudb
 
@@ -555,6 +556,106 @@ class StoreHandler(BaseHTTPRequestHandler):
             'd_ret':    d_ret
         }
 
+    def PACSinteract_checkStatus(self, *args, **kwargs):
+        """
+        Check on the status of a retrieve event.
+        """
+        global  Gd_tree
+        b_status        = True
+        d_request       = {}
+        d_meta          = {}
+        d_ret           = {}
+        for k,v in kwargs.items():
+            if k == 'request':          d_request           = v
+
+        # pudb.set_trace()
+        d_meta          = d_request['meta']
+        if 'on' in d_meta:
+            d_on        = d_meta['on']
+            if 'series_uid' in d_on:
+                str_seriesUID       = d_on['series_uid']
+                str_seriesMapDir    = Gd_tree.cat('/xinetd/series_mapDir')
+                str_seriesMapFile   = '%s/%s.json' % (  str_seriesMapDir,
+                                                        str_seriesUID )
+                if os.path.exists(str_seriesMapFile):
+                    with open(str_seriesMapFile, 'r') as f:
+                        d_series        = json.load(f)
+                        f.close()
+                        str_PACSdir     = d_series[str_seriesUID]
+                        str_doneFile    = '%s/series.info' % str_PACSdir
+                        numDCMFiles     = len(glob.glob('%s/*dcm' % str_PACSdir))
+                        if os.path.exists(str_doneFile):
+                            d_ret       = {
+                                'msg':              'Received all DICOM files.',
+                                'numDCMfiles':      numDCMFiles,
+                                'terminatorFile':   str_doneFile,
+                                'DICOMdir':         str_PACSdir,
+                                'seriesUID':        str_seriesUID,
+                                'status':           True
+                            }
+                        else:
+                            d_ret       = {
+                                'msg':              'Some DICOM files pending.',
+                                'numDCMfiles':      numDCMFiles,
+                                'terminatorFile':   str_doneFile,
+                                'DICOMdir':         str_PACSdir,
+                                'seriesUID':        str_seriesUID,
+                                'status':           False
+                            }
+                else:
+                    d_ret       = {
+                        'msg':      'Series map file %s not found' % str_seriesMapFile,
+                        'status':   False
+                    }
+            else:
+                d_ret       = {
+                    'msg':      'series_uid was not specified in call',
+                    'status':   False
+                }
+
+        return d_ret
+
+    def PACSinteract_copySeries(self, *args, **kwargs):
+        """
+        For a passed series, copy from unpack location to a client
+        specified destination. 
+
+        PRECONDITIONS
+        * The destination target must be on the same filesystem!
+        """
+        b_status        = False
+        d_request       = {}
+        d_meta          = {}
+        d_ret           = {}
+        for k,v in kwargs.items():
+            if k == 'request':          d_request           = v
+
+        # pudb.set_trace()
+        d_meta          = d_request['meta']
+        if 'to' in d_meta:
+            d_ret           = self.PACSinteract_checkStatus(request = d_request)        
+            str_targetBase  = d_meta['to']['path']
+            str_targetDir   = os.path.join(str_targetBase, d_ret['seriesUID'])
+            str_sourceDir   = d_ret['DICOMdir']
+            str_copyMsg = 'Copying %s to %s...' % (str_sourceDir, str_targetDir)
+            self.qprint(str_copyMsg)
+            pudb.set_trace()
+            try:
+                shutil.copytree(str_sourceDir, str_targetDir)
+                b_status    = True
+                str_msg     = 'Success: ' + str_copyMsg
+            except:
+                b_status    = False
+                str_msg     = 'Failed: ' + str_copyMsg
+
+        str_timeStamp   = datetime.datetime.today().strftime('%Y%m%d%H%M%S.%f')
+
+        return {
+            'status':       b_status,
+            'msg':          str_msg,
+            'timestamp':    str_timeStamp    
+        }
+
     def PACSinteract_process(self, *args, **kwargs):
         """
         The PACS Q/R handler.
@@ -565,8 +666,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         d_request       = {}
         d_meta          = {}
         str_path        = ''
-        # The return from this method
-        d_return        = {}
+        d_ret           = {}
         T               = C_stree()
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
@@ -594,10 +694,15 @@ class StoreHandler(BaseHTTPRequestHandler):
                         b_status        = False
                 if d_meta['do'] == 'retrieve':
                     d_service['executable'] = Gd_tree.cat('/bin/movescu')
-                    # pudb.set_trace()
                     d_ret       = pypx.move({**d_service, **d_on})
                     if d_ret['status'] == 'error':
                         b_status        = False
+                if d_meta['do'] == 'retrieveStatus':
+                    d_ret       = self.PACSinteract_checkStatus(request = d_request)
+                    b_status    = d_ret['status']
+                if d_meta['do'] == 'copy':
+                    d_ret       = self.PACSinteract_copySeries(request = d_request)
+                    b_status    = d_ret['status']
             else:
                 return {
                     'status':   False,
@@ -606,7 +711,7 @@ class StoreHandler(BaseHTTPRequestHandler):
 
         return {
                 'status':       b_status,
-                d_meta['do']:    d_ret
+                d_meta['do']:   d_ret
                 }
 
     def hello_process(self, *args, **kwargs):
