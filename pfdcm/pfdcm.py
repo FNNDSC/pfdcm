@@ -639,7 +639,6 @@ class StoreHandler(BaseHTTPRequestHandler):
             str_sourceDir   = d_ret['DICOMdir']
             str_copyMsg = 'Copying %s to %s...' % (str_sourceDir, str_targetDir)
             self.qprint(str_copyMsg)
-            pudb.set_trace()
             try:
                 shutil.copytree(str_sourceDir, str_targetDir)
                 b_status    = True
