@@ -17,7 +17,7 @@ pfdcm  v1.0.1
 Overview
 ********
 
-This repository provides ``pfdcm`` -- a controlling service that speaks to a PACS and handles DICOM data management.
+This repository provides ``pfdcm`` -- a controlling service that speaks to a PACS and handles DICOM data management. This is the bleeding edge dev branch.
 
 pfdcm
 =====
