@@ -16,6 +16,11 @@ import  time
 import  inspect
 import  pprint
 
+import  base64
+import  uuid
+import  tempfile
+import  zipfile
+
 import  threading
 import  platform
 import  socket
@@ -28,6 +33,7 @@ import  glob
 import  pudb
 
 import  pypx
+import  pfmisc
 
 # pfcon local dependencies
 from    ._colors        import  Colors
@@ -127,7 +133,16 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         """
         self.__name__   = 'StoreHandler'
-        self.pp         = pprint.PrettyPrinter(indent=4)
+
+        self.b_useDebug         = False
+        self.str_debugFile      = '/tmp/pacsretrieve.txt'
+        self.b_quiet            = True
+        self.dp                 = pfmisc.debug(    
+                                            verbosity   = 0,
+                                            level       = -1,
+                                            within      = self.__name__
+                                            )
+        self.pp                 = pprint.PrettyPrinter(indent=4)
 
         # pudb.set_trace()
 
@@ -162,24 +177,24 @@ class StoreHandler(BaseHTTPRequestHandler):
 
         d_ret = {}
 
-        self.qprint('Creating service file...', comms = 'status')
+        self.dp.qprint('Creating service file...', comms = 'status')
         d_ret['fileCreate'] = self.xinetd_fileCreate_process()
-        self.qprint('d_ret["fileCreate"] =\n%s' %\
+        self.dp.qprint('d_ret["fileCreate"] =\n%s' %\
                 self.df_print(d_ret['fileCreate']), comms = 'status' )
 
-        self.qprint('Installing service file...', comms = 'status')
+        self.dp.qprint('Installing service file...', comms = 'status')
         d_ret['fileInstall'] = self.xinetd_fileInstall_process()
-        self.qprint('d_ret["fileInstall"] =\n%s' %\
+        self.dp.qprint('d_ret["fileInstall"] =\n%s' %\
                 self.df_print(d_ret['fileInstall']), comms = 'status' )
 
-        self.qprint('Making directories...', comms = 'status')
+        self.dp.qprint('Making directories...', comms = 'status')
         d_ret['serviceDirs'] = self.xinetd_serviceDirs_process()
-        self.qprint('d_ret["serviceDirs"] =\n%s' %\
+        self.dp.qprint('d_ret["serviceDirs"] =\n%s' %\
                 self.df_print(d_ret['serviceDirs']), comms = 'status' )
 
-        self.qprint('Restarting xinetd...', comms = 'status')
+        self.dp.qprint('Restarting xinetd...', comms = 'status')
         d_ret['service'] = self.xinetd_service_process()
-        self.qprint('d_ret["service"] =\n%s' %\
+        self.dp.qprint('d_ret["service"] =\n%s' %\
                 self.df_print(d_ret['service']), comms = 'status' )
 
         return {
@@ -217,16 +232,158 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         return
 
-    def do_GET(self):
+    def do_GET_withCompression(self, d_msg):
+        """
+        Process a "GET" using zip/base64 encoding
 
+        :return:
+        """
+
+        # d_msg               = ast.literal_eval(d_server)
+        d_meta              = d_msg['meta']
+        d_on                = d_meta['on']
+        d_transport         = d_meta['transport']
+        d_compress          = d_transport['compress']
+        d_ret               = {}
+
+        str_serverPath      = self.PACSinteract_checkStatus(request = d_msg)['DICOMdir']
+        # d_ret['preop']      = self.do_GET_preop(    meta          = d_meta,
+        #                                             path          = str_serverPath)
+        # if d_ret['preop']['status']:
+        #     str_serverPath      = d_ret['preop']['outgoingPath']
+
+        str_fileToProcess   = str_serverPath
+
+        b_cleanup           = False
+        # b_zip               = True
+
+        str_encoding        = 'base64'
+
+        if 'cleanup' in d_compress: b_cleanup = d_compress['cleanup']
+
+        str_archive         = d_compress['archive']
+        if str_archive == 'zip':    b_zip = True
+        else:                       b_zip = False
+        if os.path.isdir(str_serverPath):
+            b_zip           = True
+            # str_archive    = 'zip'
+
+        # If specified (or if the target is a directory), create zip archive
+        # of the local path
+        if b_zip:
+            self.dp.qprint("Zipping target '%s'..." % str_serverPath, comms = 'status')
+            str_dirSuffix   = ""
+            if os.path.isdir(str_serverPath):
+                str_dirSuffix   = '/'
+            d_fio   = zip_process(
+                action  = 'zip',
+                path    = str_serverPath,
+                arcroot = str_serverPath + str_dirSuffix
+            )
+            d_ret['zip']        = d_fio
+            d_ret['status']     = d_fio['status']
+            d_ret['msg']        = d_fio['msg']
+            d_ret['timestamp']  = '%s' % datetime.datetime.now()
+            if not d_ret['status']:
+                self.dp.qprint("An error occurred during the zip operation:\n%s" % d_ret['stdout'],
+                            comms = 'error')
+                self.ret_client(d_ret)
+                return d_ret
+
+            str_fileToProcess   = d_fio['fileProcessed']
+            str_zipFile         = str_fileToProcess
+            d_ret['zip']['filesize']   = '%s' % os.stat(str_fileToProcess).st_size
+            self.dp.qprint("Zip file: " + Colors.YELLOW + "%s" % str_zipFile +
+                        Colors.PURPLE + '...' , comms = 'status')
+
+        # Encode possible binary filedata in base64 suitable for text-only
+        # transmission.
+        if 'encoding' in d_compress: str_encoding    = d_compress['encoding']
+        if str_encoding     == 'base64':
+            self.dp.qprint("base64 encoding target '%s'..." % str_fileToProcess,
+                        comms = 'status')
+            d_fio   = base64_process(
+                action      = 'encode',
+                payloadFile = str_fileToProcess,
+                saveToFile  = os.path.basename(str_fileToProcess) + ".b64"
+            )
+            d_ret['encode']     = d_fio
+            d_ret['status']     = d_fio['status']
+            d_ret['msg']        = d_fio['msg']
+            d_ret['timestamp']  = '%s' % datetime.datetime.now()
+            str_fileToProcess   = d_fio['fileProcessed']
+            d_ret['encoding']   = {}
+            d_ret['encoding']['filesize']   = '%s' % os.stat(str_fileToProcess).st_size
+            str_base64File      = os.path.basename(str_fileToProcess)
+
+        with open(str_fileToProcess, 'rb') as fh:
+            filesize    = os.stat(str_fileToProcess).st_size
+            self.dp.qprint("Transmitting " + Colors.YELLOW + "{:,}".format(filesize) + Colors.PURPLE +
+                        " target bytes from " + Colors.YELLOW +
+                        "%s" % (str_fileToProcess) + Colors.PURPLE + '...', comms = 'status')
+            self.send_response(200)
+            # self.send_header('Content-type', 'text/json')
+            self.end_headers()
+            # try:
+            #     self.wfile.write(fh.read().encode())
+            # except:
+            self.dp.qprint('<transmission>', comms = 'tx')
+            d_ret['transmit']               = {}
+            d_ret['transmit']['msg']        = 'transmitting'
+            d_ret['transmit']['timestamp']  = '%s' % datetime.datetime.now()
+            d_ret['transmit']['filesize']   = '%s' % os.stat(str_fileToProcess).st_size
+            d_ret['status']                 = True
+            d_ret['msg']                    = d_ret['transmit']['msg']
+            self.wfile.write(fh.read())
+
+        if b_cleanup:
+            if b_zip:
+                self.dp.qprint("Removing '%s'..." % (str_zipFile), comms = 'status')
+                if os.path.isfile(str_zipFile):     os.remove(str_zipFile)
+            if str_encoding == 'base64':
+                self.dp.qprint("Removing '%s'..." % (str_base64File), comms = 'status')
+                if os.path.isfile(str_base64File):  os.remove(str_base64File)
+
+        # d_ret['postop']      = self.do_GET_postop(  meta          = d_meta)
+
+        self.ret_client(d_ret)
+        self.dp.qprint(self.pp.pformat(d_ret).strip(), comms = 'tx')
+
+        return d_ret
+
+    def do_GET(self):
+        # pudb.set_trace()
         d_server            = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(self.path).query))
         d_meta              = ast.literal_eval(d_server['meta'])
 
-        d_msg               = {'action': d_server['action'], 'meta': d_meta}
-        d_ret               = {}
-        self.qprint(self.path, comms = 'rx')
+        d_msg               = {
+                                'action':   d_server['action'],
+                                'meta':     d_meta
+                            }
+        if not 'transport' in d_meta:
+            d_transport =  {
+                    "mechanism":    "compress",
+                    "compress": {
+                        "encoding": "none",
+                        "archive":  "zip",
+                        "unpack":   True,
+                        "cleanup":  True
+                    }
+                }           
+            d_meta['transport'] = d_transport     
+        else:
+            d_transport = d_meta['transport']
+                            
+        self.dp.qprint(self.path, comms = 'rx')
 
-        return d_ret
+        if 'checkRemote'    in d_transport and d_transport['checkRemote']:
+            self.dp.qprint('Getting status on server filesystem...', comms = 'status')
+            d_ret = self.do_GET_remoteStatus(d_msg)
+            return d_ret
+
+        if 'compress'       in d_transport:
+            d_ret = self.do_GET_withCompression(d_msg)
+            return d_ret
 
     def form_get(self, str_verb, data):
         """
@@ -241,6 +398,34 @@ class StoreHandler(BaseHTTPRequestHandler):
                 'CONTENT_TYPE':     self.headers['Content-Type'],
             }
         )
+
+    def storage_resolveBasedOnKey(self, *args, **kwargs):
+        """
+        Associate a 'key' text string to an actual storage location in the filesystem space
+        on which this service has been launched.
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        global Gd_internalvar
+        str_key     = ""
+        b_status    = False
+
+        for k,v in kwargs.items():
+            if k == 'key':  str_key = v
+
+        if len(str_key):
+            str_internalLocation    = '%s/key-%s' % \
+                                      (Gd_internalvar['storeBase'],
+                                       str_key)
+            Gd_internalvar['key2address'][str_key]  = str_internalLocation
+            b_status                = True
+
+        return {
+            'status':   b_status,
+            'path':     str_internalLocation
+        }
 
     def internalctl_varprocess(self, *args, **kwargs):
         """
@@ -261,15 +446,15 @@ class StoreHandler(BaseHTTPRequestHandler):
             b_status        = True
             str_target      = ''
             str_value       = ''
-            self.qprint('In dir = %s, hits = %d' % (str_path, hits))
+            self.dp.qprint('In dir = %s, hits = %d' % (str_path, hits))
             for k, v in kwargs.items():
                 if k == 'target':   str_target  = v
                 if k == 'value':    str_value   = v
             for str_hit in Gd_tree.lsf(str_path):
                 str_content = Gd_tree.cat(str_hit)
-                self.qprint('%20s: %20s' % (str_hit, str_content))
+                self.dp.qprint('%20s: %20s' % (str_hit, str_content))
                 if str_content  == str_target:
-                    self.qprint('%20s: %20s' % (str_hit, str_value))
+                    self.dp.qprint('%20s: %20s' % (str_hit, str_value))
                     Gd_tree.touch(str_hit, str_value)
                     b_status    = True
                     hits        = hits + 1
@@ -556,6 +741,50 @@ class StoreHandler(BaseHTTPRequestHandler):
             'd_ret':    d_ret
         }
 
+    def do_GET_remoteStatus(self, d_msg, **kwargs):
+        """
+        This method is used to get information about the remote
+        server -- for example, is a remote directory/file valid?
+        """
+
+        global Gd_internalvar
+
+        d_meta              = d_msg['meta']
+
+        str_serverPath      = self.PACSinteract_checkStatus(request = d_msg)['DICOMdir']
+
+        self.dp.qprint('server path resolves to %s' % str_serverPath, comms = 'status')
+
+        b_isFile            = os.path.isfile(str_serverPath)
+        b_isDir             = os.path.isdir(str_serverPath)
+        b_exists            = os.path.exists(str_serverPath)
+        
+        self.dp.qprint('b_isfile:  %r' % b_isFile, comms = 'status')
+        self.dp.qprint('b_isDir:   %r' % b_isDir,  comms = 'status')
+        self.dp.qprint('b_exists:  %r' % b_exists, comms = 'status')
+
+        b_createdNewDir     = False
+
+        if not b_exists and Gd_internalvar['createDirsAsNeeded']:
+            os.makedirs(str_serverPath)
+            b_createdNewDir = True
+
+        d_ret               = {
+            'dir':              str_serverPath,
+            'status':           b_exists or b_createdNewDir,
+            'isfile':           b_isFile,
+            'isdir':            b_isDir,
+            'createdNewDir':    b_createdNewDir
+        }
+
+        self.send_response(200)
+        self.end_headers()
+
+        self.ret_client(d_ret)
+        self.dp.qprint(d_ret, comms = 'tx')
+
+        return {'status': b_exists or b_createdNewDir}
+
     def PACSinteract_checkStatus(self, *args, **kwargs):
         """
         Check on the status of a retrieve event.
@@ -615,7 +844,7 @@ class StoreHandler(BaseHTTPRequestHandler):
 
         return d_ret
 
-    def PACSinteract_copySeries(self, *args, **kwargs):
+    def internalDB_copySeries(self, *args, **kwargs):
         """
         For a passed series, copy from unpack location to a client
         specified destination. 
@@ -638,7 +867,7 @@ class StoreHandler(BaseHTTPRequestHandler):
             str_targetDir   = os.path.join(str_targetBase, d_ret['seriesUID'])
             str_sourceDir   = d_ret['DICOMdir']
             str_copyMsg = 'Copying %s to %s...' % (str_sourceDir, str_targetDir)
-            self.qprint(str_copyMsg)
+            self.dp.qprint(str_copyMsg)
             try:
                 shutil.copytree(str_sourceDir, str_targetDir)
                 b_status    = True
@@ -654,6 +883,60 @@ class StoreHandler(BaseHTTPRequestHandler):
             'msg':          str_msg,
             'timestamp':    str_timeStamp    
         }
+
+    def internalDB_process(self, *args, **kwargs):
+        """
+        Interaction with internal data -- i.e data that has already
+        been pulled from the PACS and is located on the pfdcm filesystem.
+        """
+
+        b_status        = True
+        d_query         = {}
+        d_request       = {}
+        d_meta          = {}
+        str_path        = ''
+        d_ret           = {}
+        T               = C_stree()
+        for k,v in kwargs.items():
+            if k == 'request':          d_request           = v
+
+        d_meta          = d_request['meta']
+        if 'do' in d_meta:
+            if 'on' in d_meta:
+                d_on        = d_meta['on']
+            if d_meta['do'] == 'pull':
+                # pudb.set_trace()
+                d_ret       = self.PACSinteract_checkStatus(request = d_request)
+                b_status    = d_ret['status']
+                if b_status:
+                    # Add some directives to the pull
+                    d_meta['transport']     = {
+                        "mechanism":    "compress",
+                        "compress": {
+                            "encoding": "none",
+                            "archive":  "zip",
+                            "unpack":   True,
+                            "cleanup":  True
+                        }
+                    }
+                    # d_ret['checkStatus']    = d_ret
+                    # d_ret['seriesPull']     = self.do_GET_withCompression(d_request)
+                    d_ret               = self.do_GET_withCompression(d_request)
+                    pudb.set_trace()
+            if d_meta['do'] == 'copy':
+                d_ret       = self.internalDB_copySeries(request = d_request)
+                b_status    = d_ret['status']
+        else:
+            return {
+                'status':   False,
+                'msg':      'No "do" directive specified.'
+            }
+
+        return {
+                'status':       b_status,
+                d_meta['do']:   d_ret
+                }
+
 
     def PACSinteract_process(self, *args, **kwargs):
         """
@@ -699,9 +982,6 @@ class StoreHandler(BaseHTTPRequestHandler):
                 if d_meta['do'] == 'retrieveStatus':
                     d_ret       = self.PACSinteract_checkStatus(request = d_request)
                     b_status    = d_ret['status']
-                if d_meta['do'] == 'copy':
-                    d_ret       = self.PACSinteract_copySeries(request = d_request)
-                    b_status    = d_ret['status']
             else:
                 return {
                     'status':   False,
@@ -729,7 +1009,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         global Gd_internalvar
 
-        self.qprint("hello_process()", comms = 'status')
+        self.dp.qprint("hello_process()", comms = 'status')
         b_status            = False
         d_ret               = {}
         d_request           = {}
@@ -781,7 +1061,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         }
 
         """
-        self.qprint("key_dereference()", comms = 'status')
+        self.dp.qprint("key_dereference()", comms = 'status')
         
         b_status    = False
         d_request   = {}
@@ -789,7 +1069,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         for k,v in kwargs.items():
             if k == 'request':      d_request   = v
 
-        # self.qprint("d_request = %s" % d_request)
+        # self.dp.qprint("d_request = %s" % d_request)
 
         if 'meta-store' in d_request:
             d_metaStore     = d_request['meta-store']
@@ -799,7 +1079,7 @@ class StoreHandler(BaseHTTPRequestHandler):
                 if str_storeKey in d_request[str_storeMeta].keys():
                     str_key     = d_request[str_storeMeta][str_storeKey]
                     b_status    = True
-                    self.qprint("key = %s" % str_key, comms = 'status')
+                    self.dp.qprint("key = %s" % str_key, comms = 'status')
         return {
             'status':   b_status,
             'key':      str_key
@@ -823,7 +1103,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         }'
 
         """
-        self.qprint("status_process()", comms = 'status')
+        self.dp.qprint("status_process()", comms = 'status')
         d_request                   = {}
         d_meta                      = {}
         d_jobOperation              = {}
@@ -838,7 +1118,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         d_jobOperation      = self.jobOperation_do(     key     = str_keyID,
                                                         action  = 'getInfo',
                                                         op      = 'all')
-        self.qprint('d_status = %s' % self.pp.pformat(d_jobOperation).strip(), comms = 'status')
+        self.dp.qprint('d_status = %s' % self.pp.pformat(d_jobOperation).strip(), comms = 'status')
 
         return {
             'status':       d_jobOperation['status'],
@@ -848,14 +1128,7 @@ class StoreHandler(BaseHTTPRequestHandler):
 
     def do_POST(self, *args, **kwargs):
         """
-        Main dispatching method for coordination service.
-
-        The following actions are available:
-
-            * hello
-            * coordinate
-            * status
-            * servicectl
+        Main entry point.
 
         :param kwargs:
         :return:
@@ -866,7 +1139,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         b_threaded  = False
 
         # Parse the form data posted
-        self.qprint(str(self.headers), comms = 'rx')
+        self.dp.qprint(str(self.headers), comms = 'rx')
 
         length              = self.headers['content-length']
         data                = self.rfile.read(int(length))
@@ -878,26 +1151,26 @@ class StoreHandler(BaseHTTPRequestHandler):
             'formsize': sys.getsizeof(form)
         }
 
-        self.qprint('data length = %d' % len(data),   comms = 'status')
-        self.qprint('form length = %d' % len(form), comms = 'status')
+        self.dp.qprint('data length = %d' % len(data),   comms = 'status')
+        self.dp.qprint('form length = %d' % len(form), comms = 'status')
 
         if len(form):
-            self.qprint("Unpacking multi-part form message...", comms = 'status')
+            self.dp.qprint("Unpacking multi-part form message...", comms = 'status')
             for key in form:
-                self.qprint("\tUnpacking field '%s..." % key, comms = 'status')
+                self.dp.qprint("\tUnpacking field '%s..." % key, comms = 'status')
                 d_form[key]     = form.getvalue(key)
             d_msg               = json.loads((d_form['d_msg']))
         else:
-            self.qprint("Parsing JSON data...", comms = 'status')
+            self.dp.qprint("Parsing JSON data...", comms = 'status')
             d_data              = json.loads(data.decode())
             d_msg               = d_data['payload']
 
-        self.qprint('d_msg = %s' % self.pp.pformat(d_msg).strip(), comms = 'status')
+        self.dp.qprint('d_msg = %s' % self.pp.pformat(d_msg).strip(), comms = 'status')
 
         if 'action' in d_msg:
-            self.qprint("verb: %s detected." % d_msg['action'], comms = 'status')
+            self.dp.qprint("verb: %s detected." % d_msg['action'], comms = 'status')
             str_method      = '%s_process' % d_msg['action']
-            self.qprint("method to call: %s(request = d_msg) " % str_method, comms = 'status')
+            self.dp.qprint("method to call: %s(request = d_msg) " % str_method, comms = 'status')
             d_done          = {'status': False}
             try:
                 pf_method   = getattr(self, str_method)
@@ -909,7 +1182,7 @@ class StoreHandler(BaseHTTPRequestHandler):
 
             if not b_threaded:
                 d_done      = pf_method(request = d_msg)
-                self.qprint(self.pp.pformat(d_done).strip(), comms = 'tx')
+                self.dp.qprint(self.pp.pformat(d_done).strip(), comms = 'tx')
                 d_ret       = d_done
             else:
                 t_process   = threading.Thread( target  = pf_method,
@@ -925,16 +1198,16 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         """
         d_ctl               = d_meta['ctl']
-        self.qprint('Processing server ctl...', comms = 'status')
-        self.qprint(d_meta, comms = 'rx')
+        self.dp.qprint('Processing server ctl...', comms = 'status')
+        self.dp.qprint(d_meta, comms = 'rx')
         if 'serverCmd' in d_ctl:
             if d_ctl['serverCmd'] == 'quit':
-                self.qprint('Shutting down server', comms = 'status')
+                self.dp.qprint('Shutting down server', comms = 'status')
                 d_ret = {
                     'msg':      'Server shut down',
                     'status':   True
                 }
-                self.qprint(d_ret, comms = 'tx')
+                self.dp.qprint(d_ret, comms = 'tx')
                 self.ret_client(d_ret)
                 os._exit(0)
 
@@ -1046,4 +1319,136 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
         print(Colors.LIGHT_GREEN + "\n\n\tWaiting for incoming data..." + Colors.NO_COLOUR)
 
+def zipdir(path, ziph, **kwargs):
+    """
+    Zip up a directory.
+
+    :param path:
+    :param ziph:
+    :param kwargs:
+    :return:
+    """
+    str_arcroot = ""
+    for k, v in kwargs.items():
+        if k == 'arcroot':  str_arcroot = v
+
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            str_arcfile = os.path.join(root, file)
+            if len(str_arcroot):
+                str_arcname = str_arcroot.split('/')[-1] + str_arcfile.split(str_arcroot)[1]
+            else:
+                str_arcname = str_arcfile
+            try:
+                ziph.write(str_arcfile, arcname = str_arcname)
+            except:
+                print("Skipping %s" % str_arcfile)
+
+
+def zip_process(**kwargs):
+    """
+    Process zip operations.
+
+    :param kwargs:
+    :return:
+    """
+
+    str_localPath   = ""
+    str_zipFileName = ""
+    str_action      = "zip"
+    str_arcroot     = ""
+    for k,v in kwargs.items():
+        if k == 'path':             str_localPath   = v
+        if k == 'action':           str_action      = v
+        if k == 'payloadFile':      str_zipFileName = v
+        if k == 'arcroot':          str_arcroot     = v
+
+    if str_action       == 'zip':
+        str_mode        = 'w'
+        str_arcFileName = '%s/%s' % (tempfile.gettempdir(), uuid.uuid4())
+        str_zipFileName = str_arcFileName + '.zip'
+    else:
+        str_mode        = 'r'
+
+    ziphandler          = zipfile.ZipFile(str_zipFileName, str_mode, zipfile.ZIP_DEFLATED)
+    if str_mode == 'w':
+        if os.path.isdir(str_localPath):
+            zipdir(str_localPath, ziphandler, arcroot = str_arcroot)
+            # str_zipFileName = shutil.make_archive(str_arcFileName, 'zip', str_localPath)
+        else:
+            if len(str_arcroot):
+                str_arcname = str_arcroot.split('/')[-1] + str_localPath.split(str_arcroot)[1]
+            else:
+                str_arcname = str_localPath
+            try:
+                ziphandler.write(str_localPath, arcname = str_arcname)
+            except:
+                ziphandler.close()
+                os.remove(str_zipFileName)
+                return {
+                    'msg':      json.dumps({"msg": "No file or directory found for '%s'" % str_localPath}),
+                    'status':   False
+                }
+    if str_mode     == 'r':
+        ziphandler.extractall(str_localPath)
+    ziphandler.close()
+    return {
+        'msg':              '%s operation successful' % str_action,
+        'fileProcessed':    str_zipFileName,
+        'status':           True,
+        'path':             str_localPath,
+        'zipmode':          str_mode,
+        'filesize':         "{:,}".format(os.stat(str_zipFileName).st_size),
+        'timestamp':        '%s' % datetime.datetime.now()
+    }
+
+
+def base64_process(**kwargs):
+    """
+    Process base64 file io
+    """
+
+    str_fileToSave      = ""
+    str_fileToRead      = ""
+    str_action          = "encode"
+    data                = None
+
+    for k,v in kwargs.items():
+        if k == 'action':           str_action          = v
+        if k == 'payloadBytes':     data                = v
+        if k == 'payloadFile':      str_fileToRead      = v
+        if k == 'saveToFile':       str_fileToSave      = v
+        # if k == 'sourcePath':       str_sourcePath      = v
+
+    if str_action       == "encode":
+        # Encode the contents of the file at targetPath as ASCII for transmission
+        if len(str_fileToRead):
+            with open(str_fileToRead, 'rb') as f:
+                data            = f.read()
+                f.close()
+        data_b64            = base64.b64encode(data)
+        with open(str_fileToSave, 'wb') as f:
+            f.write(data_b64)
+            f.close()
+        return {
+            'msg':              'Encode successful',
+            'fileProcessed':    str_fileToSave,
+            'status':           True
+            # 'encodedBytes':     data_b64
+        }
+
+    if str_action       == "decode":
+        if len(data) % 4:
+            # not a multiple of 4, add padding:
+            data += '=' * (4 - len(data) % 4)
+        bytes_decoded     = base64.b64decode(data)
+        with open(str_fileToSave, 'wb') as f:
+            f.write(bytes_decoded)
+            f.close()
+        return {
+            'msg':              'Decode successful',
+            'fileProcessed':    str_fileToSave,
+            'status':           True
+            # 'decodedBytes':     bytes_decoded
+        }
 
