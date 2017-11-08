@@ -9,42 +9,21 @@
 #
 
 pydcm_dev:
-  image:  ${CREPO}/pydcm
+  image:  ${CREPO}/pfdcm
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - ./chris_backend:/usr/src/chris_backend
-    # - ./FS/local:/hostFS/pfconFS
-  volumes_from:
-    - dicom_listener
-    - chris_dev_files
+    - .:/usr/local
   ports:
-    - "8000:8000"
-  links:
-    - chris_dev_db:mysql
-    - pfcon_service:pfcon
-    - pman_service:pman
+    - "5015:5015"
   labels:
-    name: "ChRIS_ultron_backEnd"
-    role: "Backend development server"
-
-chris_dev_files:
-  image:  alpine
-  command: "chmod 777 /usr/users"
-  volumes:
-    - /usr/users
-    - /data
-  labels:
-    name: "ChRIS_ultron_backEnd feed files"
-    role: "Backend development feed files"
-
-dicom_listener:
-  image:  fnndsc/dck-dicom-listener
-  volumes:
-    - /incoming
-  ports:
-    - "10402:10402"
-  labels:
-    name: "dicom_listener"
-    role: "Dicom listener"
-
-
+    name: "DICOM intermediatry server, part of the CHRIS backend."
+    role: "DICOM intermediatry server, part of the CHRIS backend."
+  command: ["--forever", "--httpResponse", "--startlistener", "--setPACS", "{
+    'orthanc' : {
+        'server_ip': '10.17.24.163',
+        'aet': 'CHIPS',
+        'aet_listener': 'CHIPS',
+        'aec': 'ORTHANC',
+        'server_port': '4242'
+    }
+}"]
