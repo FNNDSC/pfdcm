@@ -41,7 +41,7 @@ RUN apt-get update \
   && pip3 install pudb                                                \
   && pip3 install pypx==0.10                                          \
   && pip3 install pfmisc==1.0.1                                       \
-  && pip3 install pfdcm==1.1.7.dev0
+  && pip3 install pfdcm==1.1.9.dev0
 
 COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
 RUN chmod 777 /dock                                                   \
@@ -50,8 +50,6 @@ RUN chmod 777 /dock                                                   \
 
 ENTRYPOINT ["/dock/docker-entrypoint.py"]
 EXPOSE 5055
-
-CMD ["/usr/sbin/xinetd", "--dontfork"]
 
 # Start as user $UID
 # USER $UID

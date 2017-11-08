@@ -8,22 +8,14 @@
 # specify them again in docker-compose.yml.
 #
 
-pydcm_dev:
+pfdcm_dev:
   image:  ${CREPO}/pfdcm
   volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - .:/usr/local
+    # - /var/run/docker.sock:/var/run/docker.sock
+    - .:/usr/local/pfdcm
   ports:
     - "5015:5015"
   labels:
     name: "DICOM intermediatry server, part of the CHRIS backend."
     role: "DICOM intermediatry server, part of the CHRIS backend."
-  command: ["--forever", "--httpResponse", "--startlistener", "--setPACS", "{
-    'orthanc' : {
-        'server_ip': '10.17.24.163',
-        'aet': 'CHIPS',
-        'aet_listener': 'CHIPS',
-        'aec': 'ORTHANC',
-        'server_port': '4242'
-    }
-}"]
+  command: ["--debug", "--forever", "--httpResponse", "--startlistener"]
