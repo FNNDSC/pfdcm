@@ -39,7 +39,8 @@ RUN apt-get update \
   && apt-get install -y xinetd                                        \
   && apt-get install -y dcmtk                                         \
   && pip3 install pypx==0.10                                          \
-  && pip3 install pfdcm==1.1.1.dev0
+  && pip3 install pfmisc==1.0.1                                       \
+  && pip3 install pfdcm==1.1.2.dev0
 
 COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
 RUN chmod 777 /dock                                                   \
