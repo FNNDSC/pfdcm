@@ -33,6 +33,7 @@ import  glob
 import  pudb
 
 import  pypx
+import  dicom
 import  pfmisc
 
 # pfcon local dependencies
@@ -884,6 +885,51 @@ class StoreHandler(BaseHTTPRequestHandler):
             'timestamp':    str_timeStamp    
         }
 
+    def internalDB_DICOMtagsGet(self, *args, **kwargs):
+        """
+        Determine a JSON representation of the DICOM tags of
+        a given target.
+
+        PRECONDITIONS
+        * The target must have been downloaded already
+        """
+        b_status        = False
+        d_request       = {}
+        d_meta          = {}
+        d_ret           = {}
+        d_dicom         = {}
+        for k,v in kwargs.items():
+            if k == 'request':          d_request           = v
+
+        # pudb.set_trace()
+        d_meta          = d_request['meta']
+        if 'on' in d_meta:
+            d_on        = d_meta['on']
+            d_ret       = self.PACSinteract_checkStatus(request = d_request)
+            if d_ret['status']:
+                # Read the first DCM in target dir
+                str_seriesUID       = d_on['series_uid']
+                str_DICOMdir        = d_ret['DICOMdir']
+                l_ls                = os.listdir(str_DICOMdir)
+                ds                  = dicom.read_file(os.path.join(d_ret['DICOMdir'], l_ls[0]))
+                for el in ds.dir():
+                    if el != 'PixelData':
+                        # if el == 'PatientName': pudb.set_trace()
+                        try:
+                            val = ds.data_element(el).value
+                            if isinstance(val, (bytes, bytearray)):
+                                val = val.decode()
+                            val = str(val)
+                            if isinstance(val, str):
+                                d_dicom[el]     = val
+                        except:
+                            pass
+                b_status            = True
+        return {
+            'status':       b_status,
+            'd_dicom':      d_dicom
+        }
+                        
     def internalDB_process(self, *args, **kwargs):
         """
         Interaction with internal data -- i.e data that has already
@@ -904,25 +950,9 @@ class StoreHandler(BaseHTTPRequestHandler):
         if 'do' in d_meta:
             if 'on' in d_meta:
                 d_on        = d_meta['on']
-            if d_meta['do'] == 'pull':
-                # pudb.set_trace()
-                d_ret       = self.PACSinteract_checkStatus(request = d_request)
+            if d_meta['do'] == 'DICOMtagsGet':
+                d_ret       = self.internalDB_DICOMtagsGet(request = d_request)
                 b_status    = d_ret['status']
-                if b_status:
-                    # Add some directives to the pull
-                    d_meta['transport']     = {
-                        "mechanism":    "compress",
-                        "compress": {
-                            "encoding": "none",
-                            "archive":  "zip",
-                            "unpack":   True,
-                            "cleanup":  True
-                        }
-                    }
-                    # d_ret['checkStatus']    = d_ret
-                    # d_ret['seriesPull']     = self.do_GET_withCompression(d_request)
-                    d_ret               = self.do_GET_withCompression(d_request)
-                    pudb.set_trace()
             if d_meta['do'] == 'copy':
                 d_ret       = self.internalDB_copySeries(request = d_request)
                 b_status    = d_ret['status']
