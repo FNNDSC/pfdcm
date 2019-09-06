@@ -8,30 +8,28 @@
 #
 
 import sys, os
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../pfdcm'))
 
 import  socket
 from    argparse            import RawTextHelpFormatter
 from    argparse            import ArgumentParser
-#from    distutils.sysconfig import get_python_lib
 
 import  pudb
 
 import  pfdcm
-# The following convolutions are necessary to accommodate both
-# development and deployed instances of the 'pfcon.py' module
-# and related dependencies.
-# sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../pfdcm'))
-# try:
-#     import  pfdcm
-# except:
-#     sys.path.insert(1, os.path.join(get_python_lib(True, True), 'site-packages'))
-#     sys.path.insert(1, os.path.join(get_python_lib(True, True), 'site-packages/pfcon'))
-#     import  pfcon
-from    pfdcm._colors   import Colors
+import  pfstorage
+from    pfmisc._colors      import Colors
 
-str_defIP = [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
-str_version = "1.0.1"
+str_defIP   = [l for l in (
+                [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] 
+                if not ip.startswith("127.")][:1], 
+                    [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) 
+                for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
+
+str_name    = "pfdcm"
+str_version = "2.0.0.0"
+
+
 str_desc = Colors.CYAN + """
 
          __      _                  
@@ -64,40 +62,217 @@ str_desc = Colors.CYAN + """
 """ + \
         Colors.BLINK_RED +  """
         
-            +-----------------------------------------------------------+
-            | NOTE THAT THIS SERVER DOES NOT CURRENTLY AUTHENTICATE AND |
-            | WILL HONOR *ALL* DATA PUSH AND PROCESS CONTROL REQUESTS!  |
-            +-----------------------------------------------------------+
+              +---------------------------------------------------------+
+              | Use '--enableTokenAuth' and '--tokenPath <tokenPath>'   |
+              |         arguments for secure communication.             |    
+              +---------------------------------------------------------+
               
 """ + Colors.NO_COLOUR
+
+def synopsis(ab_shortOnly = False):
+    scriptName = os.path.basename(sys.argv[0])
+    shortSynopsis =  '''
+    NAME
+
+	    pfdcm
+
+        - path-and-file DICOM
+
+    SYNOPSIS
+
+            pfdcm                                                   \\
+                [--ipSelf <storageServerIP>]                        \\
+                [--portSelf <storageServerPort>]                    \\
+                [--ipSwift <swiftServerIP>]                         \\
+                [--portSwift <swiftServerPort>]                     \\
+                [--verbosity <level>]                               \\
+                [--configFileLoad <file>]                           \\
+                [--configFileSave <file>]                           \\
+                [--test]                                            \\
+                [--httpResponse]                                    \\
+                [-x|--desc]                                         \\
+                [-y|--synopsis]                                     \\
+                [--version]                                         \\
+                [--debugToDir <dir>]                                \\
+                [--verbosity <level>]                               \\
+                [--type <storageBackendType>]                       \\
+                [--startlistener]                                   \\
+                [--setPACS <PACSJSON>]                              \\
+                --msg '<JSON_formatted_message>'
+
+    BRIEF EXAMPLE
+
+            pfdcm                                                   \\
+                --ipSwift %s                                \\
+                --portSwift 8080                                    \\
+                --ipSelf %s                                \\
+                --portSelf 4055                                     \\
+                --httpResponse                                      \\
+                --verbosity 1                                       \\
+                --debugToDir /tmp                                   \\
+                --type swift                                        \\
+                --server                                            \\
+                --startlistener                                     \\
+                --forever 
+
+    ''' % (str_defIP, str_defIP)
+
+    description =  '''
+    DESCRIPTION
+
+        ``pfdcm`` is a module/script that provides a ChRIS comms conformant
+        service that acts as a consisitent intermediary for various backend
+        DICOM servers.
+
+        ``pfdcm`` can perform PACS Q/R and for retrieve stores files in various
+        locations -- on the local filesytem or in object storage (such as
+        swift)
+
+        ``pfdcm`` operates in:
+
+            * an http server mode, in which it offers an http REST-like API
+              for using the library/module.
+
+    ARGS
+
+        --msg '<JSON_formatted>'
+        The action to perform.    
+
+        [--type <storageBackendType>]
+        The type of object storage. Currently this is 'swift'.
+
+        [--ipSwift <swiftIP>]                            
+        The IP interface of the object storage service. Default %s.
+
+        [--portSwift <swiftPort>]
+        The port of the object storage service. Defaults to '8080'.
+
+        [--ipSelf <selfIP>]                            
+        The IP interface of the pfstorage service for server mode. Default %s.
+
+        [--portSelf <selfPort>]
+        The port of the pfstorage service for server mode. Defaults to '4055'.
+
+        [--httpResponse]
+        Send return strings as HTTP formatted replies with content-type html.
+
+        [--configFileLoad <file>]
+        Load configuration information from the JSON formatted <file>.
+
+        [--configFileSave <file>]
+        Save configuration information to the JSON formatted <file>.
+
+        [-x|--desc]                                     
+        Provide an overview help page.
+
+        [-y|--synopsis]
+        Provide a synopsis help summary.
+
+        [--version]
+        Print internal version number and exit.
+
+        [--debugToDir <dir>]
+        A directory to contain various debugging output -- these are typically
+        JSON object strings capturing internal state. If empty string (default)
+        then no debugging outputs are captured/generated. If specified, then
+        ``pfcon`` will check for dir existence and attempt to create if
+        needed.
+
+        [-v|--verbosity <level>]
+        Set the verbosity level. "0" typically means no/minimal output. Allows for
+        more fine tuned output control as opposed to '--quiet' that effectively
+        silences everything.
+
+        [--setPACS <JSONstring>]
+        As part of the initialization of the system, set some information pertaining
+        to a PACS. For example,
+
+         --setPACS \\
+                '{
+                    "orthanc" : {
+                        "server_ip": "%HOST_IP",
+                        "aet": "CHIPS",
+                        "aet_listener": "CHIPS",
+                        "aec": "ORTHANC",
+                        "server_port": "4242"
+                    }
+                }'
+
+    EXAMPLES
+
+    pfdcm                                                  \\
+        --ipSwift %s                              \\
+        --portSwift 8080                                    \\
+        --ipSelf %s                               \\
+        --portSelf 4055                                     \\
+        --httpResponse                                      \\
+        --verbosity 1                                       \\
+        --debugToDir /tmp                                   \\
+        --type swift                                        \\
+        --server                                            \\
+        --forever 
+
+    ''' % (str_defIP, str_defIP, str_defIP, str_defIP)
+    if ab_shortOnly:
+        return shortSynopsis
+    else:
+        return shortSynopsis + description
 
 parser  = ArgumentParser(description = str_desc, formatter_class = RawTextHelpFormatter)
 
 parser.add_argument(
-    '--ip',
+    '--httpProxy',
     action  = 'store',
-    dest    = 'ip',
+    dest    = 'httpProxy',
+    default = '',
+    help    = 'Optional proxy to use.'
+)
+parser.add_argument(
+    '--forever',
+    help    = 'if specified, serve forever, otherwise terminate after single service.',
+    dest    = 'b_forever',
+    action  = 'store_true',
+    default = False
+)
+parser.add_argument(
+    '--httpResponse',
+    help    = 'if specified, return HTTP responses',
+    dest    = 'b_httpResponse',
+    action  = 'store_true',
+    default = False
+)
+parser.add_argument(
+    '--ipSelf',
+    action  = 'store',
+    dest    = 'ipSelf',
     default = str_defIP,
     help    = 'IP to connect.'
 )
 parser.add_argument(
-    '--port',
+    '--portSelf',
     action  = 'store',
-    dest    = 'port',
-    default = '5015',
+    dest    = 'portSelf',
+    default = '4055',
+    help    = 'Port to use.'
+)
+parser.add_argument(
+    '--ipSwift',
+    action  = 'store',
+    dest    = 'ipSwift',
+    default = str_defIP,
+    help    = 'IP to connect.'
+)
+parser.add_argument(
+    '--portSwift',
+    action  = 'store',
+    dest    = 'portSwift',
+    default = '8080',
     help    = 'Port to use.'
 )
 parser.add_argument(
     '--version',
     help    = 'if specified, print version number',
     dest    = 'b_version',
-    action  = 'store_true',
-    default = False
-)
-parser.add_argument(
-    '--forever',
-    help    = 'if specified, serve forever, otherwise terminate after single service.',
-    dest    = 'b_forever',
     action  = 'store_true',
     default = False
 )
@@ -109,11 +284,51 @@ parser.add_argument(
     default = False
 )
 parser.add_argument(
-    '--httpResponse',
-    help    = 'if specified, return HTTP responses',
-    dest    = 'b_httpResponse',
+    '--configFileLoad',
+    help    = 'a file containing configuration information',
+    dest    = 'str_configFileLoad',
+    action  = 'store',
+    default = ''
+)
+parser.add_argument(
+    '--configFileSave',
+    help    = 'a file to store configuration information',
+    dest    = 'str_configFileSave',
+    action  = 'store',
+    default = ''
+)
+parser.add_argument(
+    '--debugToDir',
+    help    = 'a destination directory to contain debugging info',
+    dest    = 'str_debugToDir',
+    action  = 'store',
+    default = ''
+)
+parser.add_argument(
+    "-v", "--verbosity",
+    help    = "verbosity level for app",
+    dest    = 'verbosity',
+    default = "1")
+parser.add_argument(
+    "-x", "--desc",
+    help    = "long synopsis",
+    dest    = 'desc',
     action  = 'store_true',
     default = False
+)
+parser.add_argument(
+    "-y", "--synopsis",
+    help    = "short synopsis",
+    dest    = 'synopsis',
+    action  = 'store_true',
+    default = False
+) 
+parser.add_argument(
+    '--type',
+    help    = 'the type of openstorage',
+    dest    = 'str_type',
+    action  = 'store',
+    default = 'swift'
 )
 parser.add_argument(
     '--startlistener',
@@ -131,31 +346,50 @@ parser.add_argument(
 )
 
 args            = parser.parse_args()
-args.port       = int(args.port)
+args.portSelf   = int(args.portSelf)
+
+if args.desc or args.synopsis:
+    print(str_desc)
+    if args.desc:
+        str_help     = synopsis(False)
+    if args.synopsis:
+        str_help     = synopsis(True)
+    print(str_help)
+    sys.exit(1)
 
 if args.b_version:
     print("Version: %s" % str_version)
     sys.exit(1)
 
-# pudb.set_trace()
-server          = pfdcm.ThreadedHTTPServer((args.ip, args.port), pfdcm.StoreHandler)
+pudb.set_trace()
+handlerInit     = pfdcm.DCMhandler(
+                        initStateOnly   = True,
+                        args            = vars(args), 
+                        name            = str_name, 
+                        desc            = str_desc, 
+                        ver             = str_version
+                )
+server          = pfstorage.ThreadedHTTPServer(
+                    (args.ipSelf, args.portSelf), 
+                    pfdcm.DCMhandler
+                )
 server.setup(args = vars(args), desc = str_desc, ver = str_version)
 
-if args.b_xinetd:
-    handler     = pfdcm.StoreHandler(xinetd = True)
+# if args.b_xinetd:
+#     handler     = pfdcm.StoreHandler(xinetd = True)
 
-if args.b_test:
-    handler     = pfdcm.StoreHandler(test = True)
-    handler.do_POST(
-        d_msg = {
-            "action": "hello",
-            "meta": {
-                "askAbout":     "sysinfo",
-                "echoBack":     "Hi there!"
-                }
-            }
-    )
-    sys.exit(0)
+# if args.b_test:
+#     handler     = pfdcm.StoreHandler(test = True)
+#     handler.do_POST(
+#         d_msg = {
+#             "action": "hello",
+#             "meta": {
+#                 "askAbout":     "sysinfo",
+#                 "echoBack":     "Hi there!"
+#                 }
+#             }
+#     )
+#     sys.exit(0)
 
 if args.b_forever and not args.b_test:
     server.serve_forever()

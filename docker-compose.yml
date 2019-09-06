@@ -8,43 +8,31 @@
 # specify them again in docker-compose.yml.
 #
 
-pydcm_dev:
-  image:  ${CREPO}/pydcm
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - ./chris_backend:/usr/src/chris_backend
-    # - ./FS/local:/hostFS/pfconFS
-  volumes_from:
-    - dicom_listener
-    - chris_dev_files
-  ports:
-    - "8000:8000"
-  links:
-    - chris_dev_db:mysql
-    - pfcon_service:pfcon
-    - pman_service:pman
-  labels:
-    name: "ChRIS_ultron_backEnd"
-    role: "Backend development server"
+version: '3'
 
-chris_dev_files:
-  image:  alpine
-  command: "chmod 777 /usr/users"
-  volumes:
-    - /usr/users
-    - /data
-  labels:
-    name: "ChRIS_ultron_backEnd feed files"
-    role: "Backend development feed files"
+services:
 
-dicom_listener:
-  image:  fnndsc/dck-dicom-listener
-  volumes:
-    - /incoming
-  ports:
-    - "10402:10402"
-  labels:
-    name: "dicom_listener"
-    role: "Dicom listener"
+  pfdcm_dev:
+    image:  ${CREPO}/pfdcm
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock
+      - .:/usr/local/pfdcm
+    ports:
+      - "4055:4055"
+    labels:
+      name: "DICOM intermediatry server, part of the CHRIS backend."
+      role: "DICOM intermediatry server, part of the CHRIS backend."
+    command: ["--debug", "--forever", "--httpResponse", "--startlistener"]
 
+  swift_service:
+    image:   fnndsc/docker-swift-onlyone
+    volumes:
+      - swift_storage:/srv
+    ports:
+      - "8080:8080"
+    labels:
+      name: "swift"
+      role: "swift object storage service"
 
+volumes:
+  swift_storage:
