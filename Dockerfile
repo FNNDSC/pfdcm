@@ -9,9 +9,10 @@
 #
 #   docker build --build-arg UID=$UID -t local/pfdcm .
 #
-# In the case of a proxy (located at 192.168.13.14:3128), do:
+# In the case of a proxy (located at say 10.41.13.4:3128), do:
 #
-#    docker build --build-arg http_proxy=http://192.168.13.14:3128 --build-arg UID=$UID -t local/pfdcm .
+#    export PROXY="http://10.41.13.4:3128"
+#    docker build --build-arg http_proxy=${PROXY} --build-arg UID=$UID -t local/pfdcm .
 #
 # To run an interactive shell inside this container, do:
 #
@@ -29,6 +30,10 @@ MAINTAINER fnndsc "dev@babymri.org"
 ARG UID=1001
 ENV UID=$UID
 
+ARG APPROOT="/usr/src/pfdcm"  
+COPY . /tmp/pfdcm
+COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
+
 RUN apt-get update \
   && apt-get install sudo                                             \
   && useradd -u $UID -ms /bin/bash localuser                          \
@@ -38,11 +43,10 @@ RUN apt-get update \
   && apt-get install -y libssl-dev libcurl4-openssl-dev bsdmainutils vim net-tools inetutils-ping \
   && apt-get install -y xinetd                                        \
   && apt-get install -y dcmtk                                         \
-  && pip3 install pudb                                                \
-  && pip3 install pypx==0.10                                          \
-  && pip3 install pfmisc==1.0.1                                       \
-  && pip3 install pfdcm==1.2.1.dev0
-
+  && pip install --upgrade pip                                        \
+  && pip3 install /tmp/pfdcm                                          \
+  && rm -fr /tmp/pfdcm
+  
 COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
 RUN chmod 777 /dock                                                   \
   && chmod 777 /dock/docker-entrypoint.py                             \
