@@ -1,5 +1,5 @@
 ##################
-pfdcm  v2.0.0.0
+pfdcm  v2.0.2.0
 ##################
 
 .. image:: https://badge.fury.io/py/pfdcm.svg
@@ -125,16 +125,16 @@ Command line arguments
 
     EXAMPLES
 
-    pfstorage                                               \\
-        --ipSwift localhost                                 \\
-        --portSwift 8080                                    \\
-        --ipSelf localhost                                  \\
-        --portSelf 4055                                     \\
-        --httpResponse                                      \\
-        --verbosity 1                                       \\
-        --debugToDir /tmp                                   \\
-        --type swift                                        \\
-        --server                                            \\
+    pfstorage                                               \
+        --ipSwift localhost                                 \
+        --portSwift 8080                                    \
+        --ipSelf localhost                                  \
+        --portSelf 4055                                     \
+        --httpResponse                                      \
+        --verbosity 1                                       \
+        --debugToDir /tmp                                   \
+        --type swift                                        \
+        --server                                            \
         --forever 
 
 
