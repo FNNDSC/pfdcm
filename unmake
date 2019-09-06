@@ -42,7 +42,7 @@ windowBottom
 title -d 1 "Destroying persistent volumes..."
     basedir=`pwd | xargs basename | awk '{print tolower($0)}'`
     a_VOLS=(
-        "pfpdc_swift_storage"
+        "pfdcm_swift_storage"
     )
     a_PVOLS=()
     for vol in ${a_VOLS[@]}; do
