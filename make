@@ -27,8 +27,8 @@ CREPO=fnndsc
 if (( $# == 1 )) ; then
     CREPO=$1
 fi
-CREPO=$CREPO
-TAG=
+export CREPO=$CREPO
+export TAG=
 
 declare -a A_CONTAINER=(
     "pfdcm"
