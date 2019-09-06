@@ -53,7 +53,7 @@ RUN chmod 777 /dock                                                   \
   && echo "localuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ENTRYPOINT ["/dock/docker-entrypoint.py"]
-EXPOSE 5055
+EXPOSE 4055
 
 # Start as user $UID
 # USER $UID
