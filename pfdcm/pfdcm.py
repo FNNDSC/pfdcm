@@ -143,7 +143,7 @@ class pfdcm(pfstorage.swiftStorage):
         organize the space of <self> variables a bit logically.
         """
 
-        pudb.set_trace()
+        # pudb.set_trace()
         super().__init__(*args, **kwargs)
 
         if len(args) == 3:
@@ -681,7 +681,7 @@ class DCMhandler(pfstorage.StoreHandler):
         """
         Handler constructor
         """
-        pudb.set_trace()
+        # pudb.set_trace()
         b_initStateOnly = False
 
         for k, v in kwargs.items():
@@ -716,6 +716,6 @@ class DCMhandler(pfstorage.StoreHandler):
         Process any internal state directives.
         """
 
-        pudb.set_trace()
+        # pudb.set_trace()
         return self.dcm.s.internalctl_process(*args, **kwargs)
         # return super().internalctl_process(*args, **kwargs)
