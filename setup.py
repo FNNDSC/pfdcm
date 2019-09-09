@@ -12,14 +12,14 @@ def readme():
 
 setup(
       name             =   'pfdcm',
-      version          =   '2.0.2.0',
+      version          =   '2.0.2.2',
       description      =   'Path and File DICOM',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
       author_email     =   'rudolph.pienaar@gmail.com',
       url              =   'https://github.com/FNNDSC/pfcon',
       packages         =   ['pfdcm'],
-      install_requires =   ['pydicom', 'pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfmisc', 'pudb', 'pfstorage', 'pfstate'],
+      install_requires =   ['pydicom', 'pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfmisc', 'pudb', 'pfstorage', 'pfstate', 'pypx'],
       test_suite       =   'nose.collector',
       tests_require    =   ['nose'],
       scripts          =   ['bin/pfdcm'],
