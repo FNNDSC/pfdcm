@@ -32,7 +32,7 @@ import  glob
 
 import  pudb
 
-# import  pypx
+import  pypx
 import  pydicom as dicom
 import  pfmisc
 import  pfstorage
@@ -203,8 +203,6 @@ class pfdcm(pfstorage.swiftStorage):
         T           = self.s.T
         b_status    = False
         str_file    = '/tmp/dicomlistener'
-        str_stdout  = ""
-        str_stderr  = ""
         str_xinetd  = """
         service dicomlistener 
         {
@@ -364,7 +362,6 @@ class pfdcm(pfstorage.swiftStorage):
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
 
-        # pudb.set_trace()
         d_meta          = d_request['meta']
         if 'object' in d_meta and 'do' in d_meta:
             if d_meta['object'] == 'file' and d_meta['do'] == 'create':
@@ -617,16 +614,17 @@ class pfdcm(pfstorage.swiftStorage):
         d_meta          = {}
         str_path        = ''
         d_ret           = {}
+        tree            = self.s.T
         T               = C_stree()
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
 
-        # pudb.set_trace()
+        pudb.set_trace()
         d_meta          = d_request['meta']
         if 'PACS' in d_meta:
             str_path    = '/PACS/' + d_meta['PACS']
-            if Gd_tree.isdir(str_path):
-                Gd_tree.copy(startPath  = str_path, destination = T)
+            if tree.isdir(str_path):
+                tree.copy(startPath     = str_path, destination = T)
                 d_tree                  = dict(T.snode_root)
                 d_service               = d_tree['PACS'][d_meta['PACS']]
             else:
@@ -638,12 +636,12 @@ class pfdcm(pfstorage.swiftStorage):
                 if 'on' in d_meta:
                     d_on        = d_meta['on']
                 if d_meta['do'] == 'query':
-                    d_service['executable'] = Gd_tree.cat('/bin/findscu')
+                    d_service['executable'] = tree.cat('/bin/findscu')
                     d_ret       = pypx.find({**d_service, **d_on})
                     if d_ret['status'] == 'error' or not len(d_ret['data']):
                         b_status        = False
                 if d_meta['do'] == 'retrieve':
-                    d_service['executable'] = Gd_tree.cat('/bin/movescu')
+                    d_service['executable'] = tree.cat('/bin/movescu')
                     d_ret       = pypx.move({**d_service, **d_on})
                     if d_ret['status'] == 'error':
                         b_status        = False
@@ -711,11 +709,18 @@ class DCMhandler(pfstorage.StoreHandler):
         if not b_initStateOnly:
             super().__init__(*args, **kwargs)
 
+    def xinetd_process(self, *args, **kwargs):
+        """
+        Process the listener behaviour
+        """
+
+        d_ret = self.dcm.xinetd_process(*args, **kwargs)
+        return d_ret
+
     def internalctl_process(self, *args, **kwargs):
         """
         Process any internal state directives.
         """
-
-        # pudb.set_trace()
-        return self.dcm.s.internalctl_process(*args, **kwargs)
-        # return super().internalctl_process(*args, **kwargs)
+        
+        d_ret = self.dcm.s.internalctl_process(*args, **kwargs)
+        return d_ret
