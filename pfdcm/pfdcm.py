@@ -95,11 +95,11 @@ class D(S):
                     },
 
                     'bin': {
-                        'storescu':         '/usr/local/bin/storescu',
-                        'storescp':         '/usr/local/bin/storescp',
-                        'findscu':          '/usr/local/bin/findscu',
-                        'movescu':          '/usr/local/bin/movescu',
-                        'echoscu':          '/usr/local/bin/echoscu',
+                        'storescu':         '/usr/bin/storescu',
+                        'storescp':         '/usr/bin/storescp',
+                        'findscu':          '/usr/bin/findscu',
+                        'movescu':          '/usr/bin/movescu',
+                        'echoscu':          '/usr/bin/echoscu',
                         'listener':         '/usr/local/bin/px-listen'    
                     },
 
@@ -425,11 +425,12 @@ class pfdcm(pfstorage.swiftStorage):
         """
         Check on the status of a retrieve event.
         """
-        global  Gd_tree
         b_status        = True
         d_request       = {}
         d_meta          = {}
         d_ret           = {}
+        T               = self.s.T
+
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
 
@@ -439,7 +440,7 @@ class pfdcm(pfstorage.swiftStorage):
             d_on        = d_meta['on']
             if 'series_uid' in d_on:
                 str_seriesUID       = d_on['series_uid']
-                str_seriesMapDir    = Gd_tree.cat('/xinetd/series_mapDir')
+                str_seriesMapDir    = T.cat('/xinetd/series_mapDir')
                 str_seriesMapFile   = '%s/%s.json' % (  str_seriesMapDir,
                                                         str_seriesUID )
                 if os.path.exists(str_seriesMapFile):
@@ -619,7 +620,7 @@ class pfdcm(pfstorage.swiftStorage):
         for k,v in kwargs.items():
             if k == 'request':          d_request           = v
 
-        pudb.set_trace()
+        # pudb.set_trace()
         d_meta          = d_request['meta']
         if 'PACS' in d_meta:
             str_path    = '/PACS/' + d_meta['PACS']
@@ -715,6 +716,21 @@ class DCMhandler(pfstorage.StoreHandler):
         """
 
         d_ret = self.dcm.xinetd_process(*args, **kwargs)
+        return d_ret
+
+    def PACSinteract_process(self, *args, **kwargs):
+        """
+        Process interactions with the PACS
+        """
+
+        d_ret = self.dcm.PACSinteract_process(*args, **kwargs)
+        return d_ret
+
+    def internalDB_process(self, *args, **kwargs):
+        """
+        Process interactions with the internal pulled DICOM sets
+        """
+        d_ret = self.dcm.internalDB_process(*args, **kwargs)
         return d_ret
 
     def internalctl_process(self, *args, **kwargs):
