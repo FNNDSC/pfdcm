@@ -11,7 +11,6 @@
 version: '3'
 
 services:
-
   pfdcm_dev:
     image:  ${CREPO}/pfdcm
     volumes:
@@ -22,7 +21,7 @@ services:
     labels:
       name: "DICOM intermediatry server, part of the CHRIS backend."
       role: "DICOM intermediatry server, part of the CHRIS backend."
-    command: ["--debug", "--forever", "--httpResponse", "--startlistener"]
+    command: ["--debug", "--forever", "--httpResponse", "--startlistener", "--verbosity", "1"]
 
   swift_service:
     image:   fnndsc/docker-swift-onlyone
