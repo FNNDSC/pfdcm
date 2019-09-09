@@ -18,6 +18,7 @@ services:
       - .:/usr/local/pfdcm
     ports:
       - "4055:4055"
+      - "10402:10402"
     labels:
       name: "DICOM intermediatry server, part of the CHRIS backend."
       role: "DICOM intermediatry server, part of the CHRIS backend."
