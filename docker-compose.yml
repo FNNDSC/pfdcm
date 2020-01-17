@@ -20,8 +20,8 @@ services:
       - "4055:4055"
       - "10402:10402"
     labels:
-      name: "DICOM intermediatry server, part of the CHRIS backend."
-      role: "DICOM intermediatry server, part of the CHRIS backend."
+      name: "DICOM intermediary server, part of the ChRIS backend."
+      role: "DICOM intermediary server, part of the ChRIS backend."
     command: ["--debug", "--forever", "--httpResponse", "--startlistener", "--verbosity", "1"]
 
   swift_service:
