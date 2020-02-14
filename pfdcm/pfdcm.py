@@ -633,6 +633,7 @@ class pfdcm(pfstorage.swiftStorage):
                     'status':   False,
                     'msg':      'Invalid PACS specified.'
                 }
+            # pudb.set_trace()
             if 'do' in d_meta:
                 if 'on' in d_meta:
                     d_on        = d_meta['on']
