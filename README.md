@@ -1,4 +1,4 @@
-# `pfdcm` intermediary ChRIS-2-PACS service
+# `pfdcm` intermediary ChRIS-to-PACS service
 
 ## Abstract
 
