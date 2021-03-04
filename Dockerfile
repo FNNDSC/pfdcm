@@ -1,5 +1,5 @@
 #
-# Dockerfile for pfcon repository.
+# Dockerfile for pfdcm.
 #
 # Build with
 #
@@ -18,43 +18,21 @@
 #
 #   docker run -ti --entrypoint /bin/bash local/pfdcm
 #
-# To pass an env var HOST_IP to container, do:
+# To pass an env var HOST_IP to the container, do:
 #
 #   docker run -ti -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pfdcm
 #
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8-slim
 
-FROM fnndsc/ubuntu-python3:latest
-MAINTAINER fnndsc "dev@babymri.org"
+LABEL DEVELOPMENT="                                     \
+    docker run --rm -it -p 4005:4005                    \
+    -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh \
+"
 
-# Pass a UID on build command line (see above) to set internal UID
-ARG UID=1001
-ENV UID=$UID
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 
-ARG APPROOT="/usr/src/pfdcm"  
-COPY . /tmp/pfdcm
-COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
+COPY ./pfdcm /app
 
-RUN apt-get update \
-  && apt-get install sudo                                             \
-  && useradd -u $UID -ms /bin/bash localuser                          \
-  && addgroup localuser sudo                                          \
-  && echo "localuser:localuser" | chpasswd                            \
-  && adduser localuser sudo                                           \
-  && apt-get install -y libssl-dev libcurl4-openssl-dev bsdmainutils vim net-tools inetutils-ping \
-  && apt-get install -y xinetd                                        \
-  && apt-get install -y dcmtk                                         \
-  && pip install --upgrade pip                                        \
-  && pip3 install /tmp/pfdcm                                          \
-  && rm -fr /tmp/pfdcm
-  
-COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
-RUN chmod 777 /dock                                                   \
-  && chmod 777 /dock/docker-entrypoint.py                             \
-  && echo "localuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-ENTRYPOINT ["/dock/docker-entrypoint.py"]
-EXPOSE 4055 10402
-
-# Start as user $UID
-# USER $UID
-
+ENV PORT=4005
+EXPOSE ${PORT}

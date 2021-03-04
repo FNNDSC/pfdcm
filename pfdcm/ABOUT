@@ -1,0 +1,4 @@
+`pfdcm` is an intermediary service that typically exist between a
+ChRIS instance and a medical image repository PACS.
+
+API documentation is available at :4005/docs
