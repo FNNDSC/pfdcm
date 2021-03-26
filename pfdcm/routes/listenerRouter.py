@@ -4,14 +4,18 @@ str_description = """
 """
 
 
-from    fastapi             import APIRouter, Query
-from    fastapi.encoders    import jsonable_encoder
+from    fastapi             import  APIRouter, Query
+from    fastapi.encoders    import  jsonable_encoder
+from    typing              import  List, Dict
 
-from    models              import xinetdModel, foobarModel
-from    controllers         import xinetdController
+from    models              import  listenerModel
+from    controllers         import  listenerController
+
+from    datetime            import  datetime
+import  config
 
 import  logging
-from    pflogf              import      FnndscLogFormatter
+from    pflogf              import  FnndscLogFormatter
 
 # pfstorage local dependencies
 import  pfmisc
@@ -20,90 +24,117 @@ import  pfstate
 from    pfstate             import  S
 
 router          = APIRouter()
-router.tags     = ['xinetd']
-
-@router.post(
-    '/xinetd/timestamps/',
-    response_model          = xinetdModel.XinetdModel,
-    summary                 = 'Update the timestamp',
-    response_description    = "An updated timestamp"
-)
-async def xinetd_timestampUpdate(target:   xinetdModel.updateTimestamp):
-    """
-    Update the timestamp field on the target object:
-
-    - **xinetdObjToTouch**: the object to update
-    """
-    str_now         : str = datetime.now()
-    # pudb.set_trace()
-    # xinetdModel.d_xinetd[target.xinetdObjToTouch]["touch_timestamp"]   = str_now
-    return xinetdModel.d_xinetd['default']
-
-# # @router.post(
-# #     '/xinetd/servicePort/',
-# #     summary         = 'Set the local listener port',
-# #     response_model  = Xinetd,
-# # )
-# # async def xinetd_portPOST(port : Item):
-# #     Xinetd_obj.T.touch('/xinetd/servicePort', port.name)
+router.tags     = ['listener subsystem services']
 
 @router.get(
-    "/xinetd/{xinet_id}",
-    response_model  = xinetdModel.XinetdModel,
-    summary         = "GET an xinet_id"
+    "/listener/list",
+    response_model  = List,
+    summary         = "GET the list of configured listener services"
 )
-async def xinetd_get(xinet_id: str):
+async def serviceList_get():
     """
-    GET an xinet_id -- one of:
-    - **default**
-    - **test**
-    - **dev**
+    GET the list of configured PACS services
     """
-    return xinetdModel.d_xinetd[xinet_id]
+    return listenerController.internalObjects_getList()
 
-@router.put("/xinetd/{xinetd_id}",
-    response_model  = xinetdModel.XinetdModel,
-    summary         = "PUT an item_id"
+@router.post(
+    '/listener/initialize/',
+    summary         = 'POST a signal to the listener `objToInitialize`, triggering a self initialization',
 )
-async def item_put(xinetd_id: str, item: xinetdModel.XinetdModel):
+async def listener_initialize(
+        objToInitialize : listenerModel.ValueStr
+) -> dict:
     """
-    PUT an item_id. Fields that are omitted will use base model values:
-    - **foo** : the first object
-    - **bar** : the second object
-    - **baz** : a fun object
+    Initialize the listener service for the object __objToInitialize__.
+
+    Parameters
+    ----------
+    - `objToInitialize`:    name of the listener object to initialize
+
+    Return
+    ------
+    - dictionary response from the initialization process
+
+    NOTE: A return / response model is not specified since the return from the 
+    call is variable.
     """
-    update_item_encoded             = jsonable_encoder(item)
+    return listenerController.obj_initialize(objToInitialize)
 
-    # Change state here!
-    xinetdModel.d_xinetd[xinetd_id] = update_item_encoded
+@router.get(
+    "/listener/status/{listenerObjName}",
+    response_model  = listenerModel.ListenerHandlerStatus,
+    summary         = "GET the listener subsystem status of a given listener object"
+)
+async def listenerStatus_get(listenerObjName: str):
+    """
+    GET the listener susystem information pertinent to a `listenerObjName`.
+    This information indicates if the subsystem has been initialized and
+    therefore if it is ready to accept incoming data.
 
-    # Call a method in the controller module
-    d_ret                           = xinetdController.noop()
+    (for a list of valid `listenerObjName` GET the `serviceList`)
+    """
+    return listenerController.internalObject_getStatus(listenerObjName)
 
-    return update_item_encoded
 
+@router.get(
+    "/listener/{listenerObjName}",
+    response_model  = listenerModel.listenerDBreturnModel,
+    summary         = "GET information for a given listener object"
+)
+async def listener_get(listenerObjName: str):
+    """
+    GET the information pertinent to a `listenerObjName`
 
-# @router.get(
-#     '/xinetd/',
-#     summary         = 'Get information pertinent to the internal xinetd service',
-#     response_model  = xinetdModel.XinetdModel,
-#     tags            = ["xinet"]
-# )
-# async def xinetd_info():
-#     """
-#     Return information pertinent to the XinetdModel
-#     """
-#     pudb.set_trace()
-#     return xinetdModel.d_xinetd["default"]
+    (for a list of valid `listenerObjName` GET the `serviceList`)
+    """
+    return listenerController.internalObject_get(listenerObjName)
 
-# @router.get(
-#     '/xinetd/servicePort',
-#     summary         = 'Get information about the service port',
-#     response_model  = Xinetd,
-#     tags            = ["servicePort"]
-# )
-# async def xinetd_servicePortInfo():
-#     """
-#     Fake meaningless response
-#     """
-#     return {'servicePort':  Xinetd_obj.T.cat('/xinetd/servicePort')}
+@router.put("/listener/{listenerObjName}/xinetd",
+    response_model  = listenerModel.XinetdDBReturnModel,
+    summary         = "PUT an xinetd update"
+)
+async def item_putXinetd(
+    listenerObjName : str,
+    xinetdInfo      : listenerModel.XinetdDBPutModel
+):
+    """
+    PUT an entire xinetd object. If the object already exists, overwrite.
+    If it does not exist, append to the space of available objects.
+
+    Note that overwriting an existing object will replace ALL the
+    `info` fields, thus leaving a default of `"string"` will literally
+    put the text `string` for a specific field.
+
+    Parameters
+    ----------
+
+    - `listenerObjName` : internal name of (new) object
+    - `xinetdInfo`      : new values for object internals
+
+    """
+    return listenerController.service_update(listenerObjName, 'xinetd', xinetdInfo)
+
+@router.put("/listener/{listenerObjName}/dcmtk",
+    response_model  = listenerModel.DcmtkDBReturnModel,
+    summary         = "PUT a dcmtk update"
+)
+async def item_putDcmtk(
+    listenerObjName : str,
+    dcmtkInfo       : listenerModel.DcmtkDBPutModel
+):
+    """
+    PUT an entire dcmtk object. If the object already exists, overwrite.
+    If it does not exist, append to the space of available objects.
+
+    Note that overwriting an existing object will replace ALL the
+    `info` fields, thus leaving a default of `"string"` will literally
+    put the text `string` for a specific field.
+
+    Parameters
+    ----------
+
+    - `listenerObjName` : internal name of (new) object
+    - `dcmtkInfo`       : new values for object internals
+
+    """
+    return listenerController.service_update(listenerObjName, 'dcmtk', dcmtkInfo)

@@ -34,5 +34,9 @@ RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 
 COPY ./pfdcm /app
 
+RUN apt update              && \
+    apt -y install xinetd   && \
+    apt -y install dcmtk
+
 ENV PORT=4005
-EXPOSE ${PORT}
+EXPOSE ${PORT} 10402

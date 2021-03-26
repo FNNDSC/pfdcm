@@ -58,7 +58,7 @@ def helloRouter_create(
     # so that its constant response can be generated in the interactive docs
 
     if tags is None:
-        tags = ['pfdcm evironmental detail']
+        tags = ['pfdcm environmental detail']
 
     about_name      = name
     about_about     = about
