@@ -24,19 +24,26 @@
 #
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8-slim
 
-LABEL DEVELOPMENT="                                     \
-    docker run --rm -it -p 4005:4005                    \
-    -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh \
+LABEL DEVELOPMENT="                                         \
+    docker run --rm -it                                     \
+    -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
+    -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh     \
 "
+
+ENV DEBIAN_FRONTEND=noninteractive 
+
 
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
-
+RUN pip install https://github.com/msbrogli/rpudb/archive/master.zip
 COPY ./pfdcm /app
 
 RUN apt update              && \
     apt -y install xinetd   && \
-    apt -y install dcmtk
+    apt -y install dcmtk    && \
+    apt -y install vim telnet netcat procps
+
+COPY xinetd_default /etc/default/xinetd
 
 ENV PORT=4005
-EXPOSE ${PORT} 10402
+EXPOSE ${PORT} 10502 5555 11113
