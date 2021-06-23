@@ -1,6 +1,5 @@
 from    pydantic            import BaseModel, Field
-
-# from    models      import xinetdModel,pacsSetupModel
+from    models              import pacsSetupModel
 
 str_designNotes = """
         This module simulates some external data base service, used
@@ -151,32 +150,35 @@ class PFdb():
     dobj_DB             = None
 
     # The core parts of the PACS server object
+    # d_PACSserverCore        : dict = dict(pacsSetupModel.PACSsetupCore)
     d_PACSserverCore        : dict  = {
                         'aet':              'AETITLE',
                         'aet_listener':     'AETITLE_LISTENER',
                         'aec':              'CALLEDAETITLE',
-                        'server_ip':        'SERVER_IP',
-                        'server_port':      'SERVER_PORT'
+                        'serverIP':         'SERVER_IP',
+                        'serverPort':       'SERVER_PORT'
     }
 
     d_PACSserverCoreError    : dict  = {
                         'aet':              'error: AETITLE',
                         'aet_listener':     'error: AETITLE_LISTENER',
                         'aec':              'error: CALLEDAETITLE',
-                        'server_ip':        'error: SERVER_IP',
-                        'server_port':      'error: SERVER_PORT'
+                        'serverIP':         'error: SERVER_IP',
+                        'serverPort':       'error: SERVER_PORT'
     }
 
     # Data pertaining to the xinetd listener
     d_xinetdCore            : dict  = {
-                        'servicePort':      '10402',
-                        'tmpDir':           '/dicom/tmp',
-                        'logDir':           '/dicom/log',
-                        'dataDir':          '/dicom/data',
+                        'servicePort':      '10502',
+                        'appPort':          '11113',
+                        'intraCallPause':   '2',
+                        'tmpDir':           '/tmp/data',
+                        'logDir':           '/home/dicom',
+                        'dataDir':          '/home/dicom',
                         'listener':         '/etc/xinetd.d/dicomlistener',
-                        'patient_mapDir':   '/dicom/log/patient_map',
-                        'study_mapDir':     '/dicom/log/study_map',
-                        'series_mapDir':    '/dicom/log/series_map'
+                        'patient_mapDir':   '/home/dicom/log/patient_map',
+                        'study_mapDir':     '/home/dicom/log/study_map',
+                        'series_mapDir':    '/home/dicom/log/series_map'
     }
 
     # Data relevant to dcmtk
@@ -186,7 +188,7 @@ class PFdb():
                         'findscu':          '/usr/bin/findscu',
                         'movescu':          '/usr/bin/movescu',
                         'echoscu':          '/usr/bin/echoscu',
-                        'listener':         '/usr/local/bin/px-listen'
+                        'receiver':         '/usr/local/bin/storescp.sh'
     }
 
     def __init__(self, *args, **kwargs):
@@ -362,6 +364,11 @@ class PFdb():
                                 ),
                 'message'       : "Service information for '%s'"        % str_objName
             }
+
+    def listenerService_treeGet(self, str_objName):
+        if str_objName in self.listenerService_listObjs():
+            return PFdb.dobj_DB
+
 
     def listenerService_info(self, str_objName) -> dict:
         """
