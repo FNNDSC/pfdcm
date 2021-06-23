@@ -17,6 +17,7 @@ import  os
 import  json
 import  pudb
 import  config
+import  time
 
 def noop():
     """
@@ -115,6 +116,19 @@ class ListenerHandler:
         self.log.addHandler(handler)
         self.log.setLevel(logging.DEBUG)
 
+    def job_runBackground(self, str_cmd) -> dict:
+        """
+        """
+        d_ret   : dict      = {}
+        subprocess.call(str_cmd, shell = True)
+
+        d_ret['cmd']        = str_cmd
+        d_ret['cwd']        = os.getcwd()
+        d_ret['stdout']     = 'not captured'
+        d_ret['stderr']     = 'not captured'
+        d_ret['returncode'] = 'not captured'
+        return d_ret
+
     def job_run(self, str_cmd) -> dict:
         """
         Running some CLI process via python is cumbersome.
@@ -188,16 +202,15 @@ class ListenerHandler:
             wait                = no
             user                = root
             server              = %s
-            server_args         = -e %s -t %s -l %s -d %s
+            server_args         = -t %s -E /usr/local/bin -D %s -p %s
             type                = UNLISTED
             port                = %s
             bind                = 0.0.0.0
         } """ % (
-            self.d_dcmtk['listener'],
-            self.d_dcmtk['storescp'],
+            self.d_dcmtk['receiver'],
             self.d_xinetd['tmpDir'],
-            self.d_xinetd['logDir'],
             self.d_xinetd['dataDir'],
+            self.d_xinetd['appPort'],
             self.d_xinetd['servicePort']
         )
 
@@ -267,20 +280,32 @@ class ListenerHandler:
 
     def restart(self, d_prior, *args, **kwargs) -> dict:
         """
-        Restart the xinet daemon
+        Restart the xinet daemon and nc the port
         """
         b_status        : bool  = False
         d_xinetdrestart : dict  = {}
+        d_nc            : dict  = {}
+        str_do          : str   = 'xinetd'
+
+        for k,v in kwargs.items():
+            if k == 'do'    :   str_do = v
 
         if d_prior['status']:
-            d_xinetdrestart = self.job_run(
-                '/etc/init.d/xinetd restart'
-            )
-            if d_xinetdrestart['returncode'] == 0: b_status = True
+            if str_do == 'xinetd':
+                d_xinetdrestart = self.job_run(
+                    '/etc/init.d/xinetd restart'
+                )
+                if d_xinetdrestart['returncode'] == 0: b_status = True
+            if str_do == 'nc':
+                d_nc = self.job_runBackground(
+                    'nc localhost %s &' % self.d_xinetd['servicePort']
+                )
+                if d_nc['returncode'] == 0: b_status = True
 
         return {
             'status':           b_status,
             'xinetdrestart':    d_xinetdrestart,
+            'nc':               d_nc,
             'prior':            d_prior
         }
 
@@ -328,7 +353,16 @@ def obj_initialize(
     Controller logic triggered when an xinet system should be initialized.
     """
 
-    d_ret   : dict  = {}
+    # pudb.set_trace()
+    d_ret       : dict  = {}
+    d_xinetd    : dict  = {}
+    d_nc        : dict  = {}
     listenerSystem  = ListenerHandler(xinetObj = objToInitialize.value)
-    d_ret =  listenerSystem.subsystem_init()
+    d_xinetd        = listenerSystem.subsystem_init()
+    time.sleep(int(listenerSystem.d_xinetd['intraCallPause']))
+    d_nc            = listenerSystem.restart(d_xinetd['listenerInit']['prior'], do = 'nc')
+    d_ret = {
+        'xinetd'    : d_xinetd,
+        'nc'        : d_nc
+    }
     return d_ret
