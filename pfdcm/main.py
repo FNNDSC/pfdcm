@@ -10,6 +10,7 @@ from    base.router             import helloRouter_create
 from    routes.dicom            import router   as dicom_router
 from    routes.listenerRouter   import router   as listener_router
 from    routes.pacsSetupRouter  import router   as pacsSetup_router
+from    routes.pacsQRrouter     import router   as pacsQR_router
 from    routes.foobarRouter     import router   as foobar_router
 from    os                      import path
 
@@ -31,6 +32,13 @@ tags_metadata = [
             In most cases you will need to configure some valid
             PACS. Usually this will be a PUT to a `PACSobjName`
             endpoint.
+            """
+    },
+    {
+        "name"          :   "PACS QR services",
+        "description"   :
+            """
+            Perform PACS Queries and Retrieve operations.
             """
     },
     {
@@ -59,9 +67,9 @@ app = FastAPI(
 )
 
 hello_router = helloRouter_create(
-    name    = 'pfdcm_hello',
-    version = str_version,
-    about   = str_about
+    name            = 'pfdcm_hello',
+    version         = str_version,
+    about           = str_about
 )
 
 # app.include_router( foobar_router,
@@ -77,4 +85,7 @@ app.include_router( listener_router,
                     prefix  = '/api/v1')
 
 app.include_router( pacsSetup_router,
+                    prefix  = '/api/v1')
+
+app.include_router( pacsQR_router,
                     prefix  = '/api/v1')
