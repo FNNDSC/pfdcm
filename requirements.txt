@@ -3,6 +3,8 @@ pflogf
 pfstate~=2.2.12
 pudb
 webob
+pynetdicom
+pypx>=3.0.0
 
 # Database
 motor
