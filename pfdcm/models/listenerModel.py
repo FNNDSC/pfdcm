@@ -62,7 +62,7 @@ class DcmtkCore(BaseModel):
     findscu         : str
     movescu         : str
     echoscu         : str
-    listener        : str
+    receiver        : str
 
 class DcmtkDBReturnModel(BaseModel):
     info            : DcmtkCore
