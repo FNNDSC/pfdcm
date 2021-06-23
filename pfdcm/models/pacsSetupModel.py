@@ -18,11 +18,11 @@ import  pudb
 
 class PACSsetupCore(BaseModel):
     """The PACS service model"""
-    aet             : str
-    aet_listener    : str
-    aec             : str
-    server_ip       : str
-    server_port     : str
+    aet             : str   = "CHIPS"
+    aet_listener    : str   = "CHIPS"
+    aec             : str   = "ORTHANC"
+    serverIP        : str   = "192.168.1.189"
+    serverPort      : str   = "4242"
 
 class time(BaseModel):
     """A simple model that has a time string field"""
