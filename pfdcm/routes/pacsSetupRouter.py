@@ -68,10 +68,11 @@ async def serviceList_get():
     """
     GET the list of configured PACS services
     """
+    # pudb.set_trace()
     return pacsSetupController.internalObjects_getList()
 
 @router.get(
-    "/PACSservice/{PACSobjName}",
+    "/PACSservice/{PACSobjName}/",
     response_model  = pacsSetupModel.PACSdbReturnModel,
     summary         = "GET the information for a given PACS"
 )
