@@ -30,7 +30,7 @@ LABEL DEVELOPMENT="                                         \
     -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh     \
 "
 
-ENV DEBIAN_FRONTEND=noninteractive 
+ENV DEBIAN_FRONTEND=noninteractive
 
 
 COPY requirements.txt /tmp/requirements.txt
