@@ -19,7 +19,7 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
   "value": "default"
-}'
+}' | jq
 
 # Config ORTHANC PACS
 curl -X 'PUT' \
@@ -28,12 +28,145 @@ curl -X 'PUT' \
   -H 'Content-Type: application/json' \
   -d '{
   "info": {
-    "aet": "ORTHANC",
+    "aet": "CHRISLOCAL",
     "aet_listener": "ORTHANC",
-    "aec": "CHRISLOCAL",
+    "aec": "ORTHANC",
     "serverIP": "192.168.1.189",
     "serverPort": "4242"
   }
+}' | jq
+
+# list PACS services
+curl -X 'GET' \
+  'http://localhost:4005/api/v1/PACSservice/list' \
+  -H 'accept: application/json' | jq
+
+# GET detail on 'orthanc'
+curl -X 'GET' \
+  'http://localhost:4005/api/v1/PACSservice/orthanc/' \
+  -H 'accept: application/json' | jq
+
+# Perform a QUERY 
+curl -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/pypx/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "pypx_find": {
+    "AccessionNumber": "",
+    "PatientID": "5644810",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": false,
+    "then": "",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
+}'| jq '.pypx' |\
+ px-report      --colorize dark \
+                --printReport csv \
+                --csvPrettify \
+                --csvPrintHeaders \
+                --reportHeaderStudyTags PatientName,PatientID,StudyDate
+
+# Retrieve data 
+curl -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/pypx/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "pypx_find": {
+    "AccessionNumber": "",
+    "PatientID": "5644810",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": false,
+    "then": "retrieve",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
 }'
 
-
+# Request the STATUS
+curl -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/pypx/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "pypx_find": {
+    "AccessionNumber": "",
+    "PatientID": "5644810",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": true,
+    "then": "status",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": false
+  }
+}'
