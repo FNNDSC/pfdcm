@@ -29,6 +29,44 @@ def noop():
         'status':   True
     }
 
+def pypx_do(
+        PACSobjName             : str,
+        listenerObjName         : str,
+        queryTerms              : pacsQRmodel.PACSqueryCore,
+        action                  : str   = "query"
+) -> dict:
+    """
+    Main dispatching method for interacting with pypx to effect some behaviour.
+
+    All calls happen with a px-find, with behaviour specified in the `then`
+    """
+    d_response  : dict  = {
+        'status'    :   False,
+        'find'      :   {},
+        'message'   :   "No %s performed" % action
+    }
+    d_service       : dict  = {}
+    d_queryTerms    : dict  = jsonable_encoder(queryTerms)
+    d_queryTerms['json']    = d_queryTerms['json_response']
+    if PACSobjName in config.dbAPI.PACSservice_listObjs():
+        if listenerObjName in config.dbAPI.listenerService_listObjs():
+            d_PACSservice   : dict          = config.dbAPI.PACSservice_info(
+                                                PACSobjName
+                                            )
+            d_service                       = d_PACSservice['info']
+            d_response['pypx']              = pypx.find({**d_service, **d_queryTerms})
+            if d_response['pypx']['status'] == 'success':
+                d_response['status']        = True
+                d_response['message']       = "pypx.then = '%s' was executed successfully" % \
+                                                d_queryTerms['then']
+        else:
+            d_response['message']       = \
+                "'%s' is not a configured listener service" % listenerObjName
+    else:
+        d_response['message']   = \
+                "'%s' is not a configured PACS service" % PACSobjName
+    return d_response
+
 def QRS_do(
         PACSobjName             : str,
         listenerObjName         : str,
