@@ -86,3 +86,35 @@ async def PACS_query(
             PACSquery
     )
 
+@router.post(
+    '/PACS/pypx/',
+    # response_model  = pacsQRmodel.PACSqueyReturnModel,
+    summary         = '''
+    Interact with the pypx tools to communicate with a `PACSservice`
+    '''
+)
+async def PACS_pypx(
+        PACSservice         : pacsQRmodel.ValueStr,
+        listenerService     : pacsQRmodel.ValueStr,
+        pypx_find           : pacsQRmodel.PACSqueryCore
+):
+    """
+    POST a query to the `PACSservice`
+
+    Parameters
+    ----------
+    - `PACSservice`:        name of the internal PACS service to query
+    - `listenerService`:    name of the listener service to use locally
+    - `PACSquery`:          the query object
+
+    Return
+    ------
+    - PACSqueryReturnModel
+    """
+    # pudb.set_trace()
+    return pacsQRcontroller.pypx_do(
+            PACSservice.value,
+            listenerService.value,
+            pypx_find
+    )
+
