@@ -33,6 +33,10 @@ class PACSqueryCore(BaseModel):
     ProtocolName                        : str   = ""
     AcquisitionProtocolDescription      : str   = ""
     AcquisitionProtocolName             : str   = ""
+    withFeedBack                        : bool  = False
+    then                                : str   = ""
+    dblogbasepath                       : str   = "/home/dicom/log"
+    json_response                       : bool  = True
 
 class time(BaseModel):
     """A simple model that has a time string field"""
