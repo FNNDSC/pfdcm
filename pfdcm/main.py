@@ -6,6 +6,7 @@ str_description = """
 """
 
 from    fastapi                 import FastAPI
+from    fastapi.middleware.cors import CORSMiddleware
 from    base.router             import helloRouter_create
 from    routes.dicom            import router   as dicom_router
 from    routes.listenerRouter   import router   as listener_router
@@ -59,11 +60,22 @@ tags_metadata = [
     }
 ]
 
-
 app = FastAPI(
     title           = 'pfdcm',
     version         = str_version,
     openapi_tags    = tags_metadata
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        # "http://localhost",
+        # "http://localhost:8080",
+        "*"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 hello_router = helloRouter_create(
