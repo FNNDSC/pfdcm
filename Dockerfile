@@ -34,6 +34,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 RUN pip install https://github.com/msbrogli/rpudb/archive/master.zip
 COPY ./pfdcm /app
