@@ -105,13 +105,12 @@ async def PACS_pypx(
     ----------
     - `PACSservice`:        name of the internal PACS service to query
     - `listenerService`:    name of the listener service to use locally
-    - `PACSquery`:          the query object
+    - `pypx_find`:          the pypx object
 
     Return
     ------
     - PACSqueryReturnModel
     """
-    # pudb.set_trace()
     return pacsQRcontroller.pypx_do(
             PACSservice.value,
             listenerService.value,
