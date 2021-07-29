@@ -1,10 +1,10 @@
 psutil~=5.8.0
 pflogf
-pfstate~=2.2.12
+pfstate~=3.0.2
 pudb
 webob
 pynetdicom
-pypx>=3.0.0
+pypx>=3.2.6
 
 # Database
 motor
