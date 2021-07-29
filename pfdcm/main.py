@@ -58,6 +58,14 @@ tags_metadata = [
             Mostly all that is required is a POST to the `initialize`
             API endpoing.
             """
+    },
+    {
+        "name"          :   "SMDB setup services",
+        "description"   :
+            """
+            Configure resources for pypx -- typically detail about swift
+            storage and CUBE itself.
+            """
     }
 ]
 
@@ -91,8 +99,8 @@ hello_router = helloRouter_create(
 app.include_router( hello_router,
                     prefix  = '/api/v1')
 
-app.include_router( dicom_router,
-                    prefix  = '/api/v1')
+# app.include_router( dicom_router,
+#                     prefix  = '/api/v1')
 
 app.include_router( listener_router,
                     prefix  = '/api/v1')
