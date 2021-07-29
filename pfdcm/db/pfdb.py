@@ -203,7 +203,7 @@ class PFdb():
             if k == 'passwd':   self.str_passwd     = v
 
         # Create the basic DB
-        PFdb.dobj_DB    = DBdata(*args, **kwargs)
+        PFdb.dobj_DB    = DBdata(*args, **dict(kwargs, useGlobalState = True))
 
         # Now add the default PACS details
         PFdb.dobj_DB.T.touch(
