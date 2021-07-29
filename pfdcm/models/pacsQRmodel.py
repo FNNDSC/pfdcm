@@ -35,6 +35,7 @@ class PACSqueryCore(BaseModel):
     AcquisitionProtocolName             : str   = ""
     withFeedBack                        : bool  = False
     then                                : str   = ""
+    thenArgs                            : str   = ""
     dblogbasepath                       : str   = "/home/dicom/log"
     json_response                       : bool  = True
 
