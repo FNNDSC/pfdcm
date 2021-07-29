@@ -60,7 +60,7 @@ async def PACSobj_portUpdate(
     return pacsSetupController.obj_portUpdate(objToUpdate, newPort)
 
 @router.get(
-    "/PACSservice/list",
+    "/PACSservice/list/",
     response_model  = List,
     summary         = "GET the list of configured PACS services"
 )
@@ -85,7 +85,7 @@ async def pacsSetup_get(
     return pacsSetupController.internalObject_get(PACSobjName)
 
 @router.put(
-    "/PACSservice/{PACSobjName}",
+    "/PACSservice/{PACSobjName}/",
     response_model  = pacsSetupModel.PACSdbReturnModel,
     summary         = "PUT information to a (possibly new) PACS object"
 )

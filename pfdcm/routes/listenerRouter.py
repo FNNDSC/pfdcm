@@ -27,7 +27,7 @@ router          = APIRouter()
 router.tags     = ['listener subsystem services']
 
 @router.get(
-    "/listener/list",
+    "/listener/list/",
     response_model  = List,
     summary         = "GET the list of configured listener services"
 )
@@ -61,7 +61,7 @@ async def listener_initialize(
     return listenerController.obj_initialize(objToInitialize)
 
 @router.get(
-    "/listener/status/{listenerObjName}",
+    "/listener/status/{listenerObjName}/",
     response_model  = listenerModel.ListenerHandlerStatus,
     summary         = "GET the listener subsystem status of a given listener object"
 )
@@ -77,7 +77,7 @@ async def listenerStatus_get(listenerObjName: str):
 
 
 @router.get(
-    "/listener/{listenerObjName}",
+    "/listener/{listenerObjName}/",
     response_model  = listenerModel.listenerDBreturnModel,
     summary         = "GET information for a given listener object"
 )
@@ -89,7 +89,7 @@ async def listener_get(listenerObjName: str):
     """
     return listenerController.internalObject_get(listenerObjName)
 
-@router.put("/listener/{listenerObjName}/xinetd",
+@router.put("/listener/{listenerObjName}/xinetd/",
     response_model  = listenerModel.XinetdDBReturnModel,
     summary         = "PUT an xinetd update"
 )
@@ -114,7 +114,7 @@ async def item_putXinetd(
     """
     return listenerController.service_update(listenerObjName, 'xinetd', xinetdInfo)
 
-@router.put("/listener/{listenerObjName}/dcmtk",
+@router.put("/listener/{listenerObjName}/dcmtk/",
     response_model  = listenerModel.DcmtkDBReturnModel,
     summary         = "PUT a dcmtk update"
 )

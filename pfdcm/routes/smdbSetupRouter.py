@@ -81,7 +81,7 @@ async def SMDBobj_cubeUpdate(
     return smdbSetupController.cubeData_update(cubeData)
 
 @router.get(
-    "/SMDB/swift/list",
+    "/SMDB/swift/list/",
     response_model  = List,
     summary         = "GET the list of configured SMDB swift services"
 )
@@ -92,7 +92,7 @@ async def swiftList_get():
     return smdbSetupController.swiftObjects_getList()
 
 @router.get(
-    "/SMDB/CUBE/list",
+    "/SMDB/CUBE/list/",
     response_model  = List,
     summary         = "GET the list of configured SMDB CUBE services"
 )
@@ -103,7 +103,7 @@ async def cubeList_get():
     return smdbSetupController.cubeObjects_getList()
 
 @router.get(
-    "/SMDB/swift/{swiftResource}",
+    "/SMDB/swift/{swiftResource}/",
     response_model  = smdbSetupModel.SMDBswiftReturnModel,
     summary         = "GET detail on a specific swift resource"
 )
@@ -116,7 +116,7 @@ async def swiftResource_get(
     return smdbSetupController.swiftObject_get(swiftResource)
 
 @router.get(
-    "/SMDB/CUBE/{cubeResource}",
+    "/SMDB/CUBE/{cubeResource}/",
     response_model  = smdbSetupModel.SMDBcubeReturnModel,
     summary         = "GET detail on a specific CUBE resource"
 )
