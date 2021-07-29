@@ -12,6 +12,7 @@ from    routes.dicom            import router   as dicom_router
 from    routes.listenerRouter   import router   as listener_router
 from    routes.pacsSetupRouter  import router   as pacsSetup_router
 from    routes.pacsQRrouter     import router   as pacsQR_router
+from    routes.smdbSetupRouter  import router   as smdbSetup_router
 from    routes.foobarRouter     import router   as foobar_router
 from    os                      import path
 
@@ -100,4 +101,7 @@ app.include_router( pacsSetup_router,
                     prefix  = '/api/v1')
 
 app.include_router( pacsQR_router,
+                    prefix  = '/api/v1')
+
+app.include_router( smdbSetup_router,
                     prefix  = '/api/v1')
