@@ -1,4 +1,4 @@
-# `pfdcm` -- Uniform REST API serivce to various PACS services
+# `pfdcm` - An Opensource REST API to communicate with any number of PACS instances concurrently
 
 ## Abstract
 
