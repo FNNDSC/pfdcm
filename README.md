@@ -8,19 +8,19 @@
 
 While `pfdcm` is also designed to be a member service in the `ChRIS` / `CUBE` ecosystem, `pfdcm` is fully functional without `CUBE` and can be used as a REST-API service to do generic PACS Query/Retrieve operations. In other words, you don't have to use/have a `ChRIS` instance to use `pfdcm`; nonetheless the full experience is improved when used within a `ChRIS` ecosystem.
 
-At a minimum (without `ChRIS`), `pfdcm` cycle allows for a client to interace with a PACS and request image files. These image files are contained within the `pfdcm` container filesystem; thus a suitable volume mapping can easily expose these retrieved files to a host system. In this mode, `pfdcm` allows a client entity to:
+At a minimum (without `ChRIS`), the `pfdcm` cycle allows for a client to interace with a PACS and request image files. These image files are contained within the `pfdcm` container filesystem; thus a suitable volume mapping can easily expose these retrieved files to a host system. In this mode, `pfdcm` allows a client entity to:
 
 * `Query` a PACS service
 * Based on the `Query`, ask the PACS to transmit various data files, i.e. do a `Retrieve`.
 * Check on the status of transmission
 
-After the `Retrieve` files should reside in the `pfdcm` container. From here, a client can additionally:
+After the `Retrieve`, files should reside in the `pfdcm` container. From here, a client can additionally:
 
 * Push received files to `CUBE` swift storage
 * Once pushed, register files to `CUBE`
 * Use the `CUBE` API to further interact with image files.
 
-This provides the full experience -- allowing a client to, using only REST-API calls, `Query`, `Retrieve` and ultimately also to download image files.
+When used as part of a `CUBE` deployment, `pfdcm` allows a client to, using only REST-API calls, perform a `Query`, `Retrieve` and ultimately also be able to download image files.
 
 Note however that this full experience does imply using two separate REST-API services:
 
