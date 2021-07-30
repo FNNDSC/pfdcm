@@ -57,7 +57,9 @@ docker run --rm -it                                                            \
         local/pfdcm /start-reload.sh
 ```
 
-See http://localhost:4005/docs
+### API swagger
+
+Full API swagger is available. Once you have started `pfdcm`, simply navigate to the machine hosting the container (usually `localhost`), so http://localhost:4005/docs .
 
 ### Examples
 
