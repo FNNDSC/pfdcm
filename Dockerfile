@@ -37,6 +37,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 RUN pip install https://github.com/msbrogli/rpudb/archive/master.zip
+RUN pip install tzlocal
 COPY ./pfdcm /app
 
 RUN apt update              && \
