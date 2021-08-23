@@ -3,11 +3,15 @@ str_description = """
     of the `pfdcm` service.
 """
 
+from    concurrent.futures  import  ProcessPoolExecutor, ThreadPoolExecutor, Future
 
 from    fastapi             import  APIRouter, Query
 from    fastapi.encoders    import  jsonable_encoder
+from    fastapi.concurrency import  run_in_threadpool
 from    pydantic            import  BaseModel, Field
 from    typing              import  Optional, List, Dict
+
+from    .jobController      import  jobber
 
 import  subprocess
 from    models              import  pacsQRmodel
@@ -18,8 +22,11 @@ from    datetime            import  datetime
 
 import  pudb
 import  config
-
+import  json
 import  pypx
+
+threadpool      = ThreadPoolExecutor()
+processpool     = ProcessPoolExecutor()
 
 def noop():
     """
@@ -28,6 +35,96 @@ def noop():
     return {
         'status':   True
     }
+
+def pypx_threadedDo(
+        PACSobjName             : str,
+        listenerObjName         : str,
+        queryTerms              : pacsQRmodel.PACSqueryCore,
+) -> Future:
+    """asynchronous wrapper around pypx_do that runs the method using concurrent.futures
+
+    Args:
+        PACSobjName (str): the PACS object to use
+        listenerObjName (str): the listener subsystem associated with the PACS object
+        queryTerms (pacsQRmodel.PACSqueryCore): the query JSON object dispatched to pypx
+
+    Returns:
+        dict: simple dictionary reflecting the async call.
+    """
+    future      = threadpool.submit(pypx_do, PACSobjName, listenerObjName, queryTerms)
+    # d_pypx_do   = await run_in_threadpool(
+    #                     lambda: pypx_do(PACSobjName, listenerObjName, queryTerms)
+    #             )
+    return future
+
+def pypx_findExec(
+        PACSobjName             : str,
+        listenerObjName         : str,
+        queryTerms              : pacsQRmodel.PACSqueryCore,
+        action                  : str   = "query"
+) -> dict:
+    """
+    This method calls a CLI equivalent of the px-find module.
+    """
+
+    def pxfindArgs_prune(d_args):
+        """
+        Prune dictionary args that do not map to px-find CLI
+        """
+        for tag in [
+            'PatientBirthDate',
+            'PatientAge',
+            'NumberOfSeriesRelatedInstances',
+            'InstanceNumber',
+            'SeriesDate',
+            'json_response'
+            ]:
+            del d_args[tag]
+
+    d_response  : dict  = {
+        'status'    :   False,
+        'message'   :   "No %s performed" % action,
+        'exec'      :   {}
+    }
+    d_JSONargs      : dict  = {}
+    str_JSONargs    : str   = ""
+    str_pxfindexec  : str   = ""
+    d_service       : dict  = {}
+    d_queryTerms    : dict  = jsonable_encoder(queryTerms)
+    d_queryTerms['json']    = d_queryTerms['json_response']
+    if PACSobjName in config.dbAPI.PACSservice_listObjs():
+        if listenerObjName in config.dbAPI.listenerService_listObjs():
+            d_PACSservice   : dict          = config.dbAPI.PACSservice_info(
+                                                PACSobjName
+                                            )
+            d_service                       = d_PACSservice['info']
+            # this following is an impedence matching hack!
+            # replace the `dblogbasepath` with `db` for the CLI call
+            d_queryTerms['db']              = d_queryTerms['dblogbasepath']
+            del d_queryTerms['dblogbasepath']
+            pxfindArgs_prune(d_queryTerms)
+            del d_service['aet_listener']
+            d_JSONargs                      = {**d_service, **d_queryTerms}
+            try:
+                shell                       = jobber({'verbosity' : 1, 'noJobLogging': True})
+                str_cliArgs                 = shell.dict2cli(d_JSONargs)
+                # str_JSONargs                = shell.dict2JSONcli(d_JSONargs)
+                str_pxfindexec              = 'px-find %s' % str_cliArgs
+                d_response['exec']          = shell.job_runbg(str_pxfindexec)
+                d_response['status']        = True
+                d_response['message']       = 'CLI px-find spawned'
+            except Exception as e:
+                d_response['error']         = '%s' % e
+        else:
+            d_response['message']       = \
+                "'%s' is not a configured listener service" % listenerObjName
+    else:
+        d_response['message']   = \
+                "'%s' is not a configured PACS service" % PACSobjName
+    with open('/home/dicom/tmp/resp.json', 'a') as db:
+        json.dump(d_response, db)
+    return d_response
+
 
 def pypx_do(
         PACSobjName             : str,
@@ -65,6 +162,8 @@ def pypx_do(
     else:
         d_response['message']   = \
                 "'%s' is not a configured PACS service" % PACSobjName
+    with open('/home/dicom/tmp/resp.json', 'a') as db:
+        json.dump(d_response, db)
     return d_response
 
 def QRS_do(
