@@ -39,6 +39,12 @@ class PACSqueryCore(BaseModel):
     dblogbasepath                       : str   = "/home/dicom/log"
     json_response                       : bool  = True
 
+class PACSasync(BaseModel):
+    """A model returned when an async PACS directive is indicated"""
+    directiveType                       : str   = "async"
+    response                            : dict
+    timestamp                           : str
+
 class time(BaseModel):
     """A simple model that has a time string field"""
     time            : str
