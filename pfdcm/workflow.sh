@@ -16,9 +16,17 @@ docker run --rm -it                                                            \
         -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
         local/pfdcm /start-reload.sh
 
+# Quick 'n dirty run -- with volume mapping.
+# Obviously change port mappings if needed (and in the Dockerfile)
+docker run --rm -it                                                            \
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -v /home/dicom:/home/dicom                                             \
+        local/pfdcm /start-reload.sh
+
 # Run with support for source debugging
 docker run --rm -it                                                            \
         -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -v /home/dicom:/home/dicom                                             \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
 
@@ -293,6 +301,86 @@ curl -s -X 'POST' \
     "json_response": true
   }
 }' | jq
+
+curl -s -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/thread/retrieve/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "AccessionNumber": "",
+    "PatientID": "LILLA-9678",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": false,
+    "then": "retrieve",
+    "thenArgs": "",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
+}'
+
+curl -s -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/exec/retrieve/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "AccessionNumber": "",
+    "PatientID": "LILLA-9678",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": false,
+    "then": "retrieve",
+    "thenArgs": "",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
+}'
 
 
 # Request the STATUS
