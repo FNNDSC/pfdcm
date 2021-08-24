@@ -25,14 +25,18 @@ router          = APIRouter()
 router.tags     = ['PACS QR services']
 
 @router.post(
-    '/PACS/thread/retrieve/',
+    '/PACS/thread/pypx/',
     response_model  = pacsQRmodel.PACSasync,
     summary         = '''
-    POST a retrieve to the `PACSservice` using subsystem `listenerService`.
+    POST a directive to the `PACSservice` using subsystem `listenerService`.
     NOTE that this an asynchronous request -- the call will be returned
     immediately with an appropriate JSON reponse. To detemine status on
     this job, POST the same payload to the `pypx` endpoing with a `status`
     then verb in the contents body.
+
+    Internally, the directive is passed to a separate thread that services
+    the request. While possibly fast to start up, this API endpoint is subject
+    to the number of threads allowed on the underlying host.
     '''
 )
 async def PACS_retrieveThreaded(
@@ -47,8 +51,8 @@ async def PACS_retrieveThreaded(
     Since the retrieve function is long-lived, a threaded approach is used so
     that the fast API synchronous event loop is not locked.
 
-    Use a POST to the `pypx` endpoint, typically with a `status` directive,
-    to get data on the actual operation.
+    Use a POST to the `sync/pypx` endpoint, typically with a `status` 
+    directive, to get data on the actual operation.
 
     Parameters
     ----------
@@ -79,14 +83,14 @@ async def PACS_retrieveThreaded(
     }
 
 @router.post(
-    '/PACS/exec/retrieve/',
+    '/PACS/exec/pypx/',
     response_model  = pacsQRmodel.PACSasync,
     summary         = '''
-    POST a retrieve to the `PACSservice` using subsystem `listenerService`.
+    POST a directive to the `PACSservice` using subsystem `listenerService`.
     NOTE that this spawns a shell script process -- the call will be returned
     immediately with an appropriate JSON reponse. To detemine status on this
-    job, POST the same payload to the `pypx` endpoing with a `status` then verb
-    in the contents body.
+    job, POST the same payload to the `sync/pypx` endpoint with a `status`
+    `then` verb in the contents body.
     '''
 )
 async def PACS_retrieveExec(
@@ -158,7 +162,7 @@ async def PACS_query(
     )
 
 @router.post(
-    '/PACS/pypx/',
+    '/PACS/sync/pypx/',
     # response_model  = pacsQRmodel.PACSqueyReturnModel,
     summary         = '''
     Interact with the pypx_find module directly. Note this is a synchronous
