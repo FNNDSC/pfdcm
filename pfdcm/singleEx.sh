@@ -41,8 +41,11 @@ declare -i b_retrieveDo=0
 declare -i b_pushDo=0
 declare -i b_registerDo=0
 declare -i b_statuDos=0
+declare -i b_JSONreport=0
 
-while getopts "iqrpgs" opt; do
+declare -i VERBOSITY=0
+
+while getopts "iqrpgsjv:" opt; do
     case $opt in
         i) b_initDo=1                   ;;
         q) b_queryDo=1                  ;;
@@ -50,10 +53,25 @@ while getopts "iqrpgs" opt; do
         p) b_pushDo=1                   ;;
         g) b_registerDo=1               ;;
         s) b_statusDo=1                 ;;
+        j) b_JSONreport=1               ;;
+        v) VERBOSITY=$OPTARG            ;;
     esac
 done
 shift $(($OPTIND - 1))
 MRN=$*
+
+if (( b_JSONreturn )) ; then
+        JSON=true
+else
+        JSON=false
+fi
+
+function vprint {
+        MESSAGE=$1
+        if (( VERBOSITY > 0 )) ; then
+                echo "$MESSAGE"
+        fi
+}
 
 if (( b_initDo )) ; then
         # Configure a swift access key/detail
@@ -140,7 +158,20 @@ fi
 
 if (( ${#MRN} )) ; then
 
-        if (( b_queryDo )) ; then 
+        if (( b_queryDo )) ; then
+                if (( ! b_JSONreport )) ; then
+                        REPORT="px-report       \
+                                        --colorize dark \
+                                        --printReport csv \
+                                        --csvPrettify \
+                                        --csvPrintHeaders \
+                                        --reportHeaderStudyTags PatientName,PatientID,StudyDate \
+                                        --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+                        "
+                else
+                        REPORT="jq"
+                fi
+                vprint "Performing QUERY on MRN $MRN..." 
                 curl -s -X 'POST' \
                   'http://localhost:4005/api/v1/PACS/sync/pypx/' \
                   -H 'accept: application/json' \
@@ -152,7 +183,7 @@ if (( ${#MRN} )) ; then
                   "listenerService": {
                     "value": "default"
                   },
-                  "pypx_find": {
+                  "PACSdirective": {
                     "AccessionNumber": "",
                     "PatientID": "'$MRN'",
                     "PatientName": "",
@@ -179,18 +210,13 @@ if (( ${#MRN} )) ; then
                     "dblogbasepath": "/home/dicom/log",
                     "json_response": true
                   }
-                }'| jq '.pypx' |\
-                 px-report      --colorize dark \
-                                --printReport csv \
-                                --csvPrettify \
-                                --csvPrintHeaders \
-                                --reportHeaderStudyTags PatientName,PatientID,StudyDate \
-                                --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+                }'| jq '.pypx' | $REPORT        
         fi
 
         if (( b_retrieveDo )) ; then
+                vprint "Performing RETRIEVE on MRN $MRN..." 
                 curl -s -X 'POST' \
-                  'http://localhost:4005/api/v1/PACS/exec/pypx/' \
+                  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
                   -d '{
@@ -231,6 +257,17 @@ if (( ${#MRN} )) ; then
         fi
 
         if (( b_statusDo )) ; then 
+                if (( ! b_JSONreport )) ; then
+                        REPORT="px-report                                      \
+                                --seriesSpecial seriesStatus                   \
+                                --printReport tabular                          \
+                                --colorize dark                                \
+                                --reportBodySeriesTags seriesStatus"
+                else
+                        REPORT="jq"
+                fi
+
+                vprint "Performing STATUS on MRN $MRN..." 
                 curl -s -X 'POST' \
                   'http://localhost:4005/api/v1/PACS/sync/pypx/' \
                   -H 'accept: application/json' \
@@ -242,7 +279,7 @@ if (( ${#MRN} )) ; then
                   "listenerService": {
                     "value": "default"
                   },
-                  "pypx_find": {
+                  "PACSdirective": {
                     "AccessionNumber": "",
                     "PatientID": "'$MRN'",
                     "PatientName": "",
@@ -269,16 +306,15 @@ if (( ${#MRN} )) ; then
                     "dblogbasepath": "/home/dicom/log",
                     "json_response": true
                   }
-                }' | jq '.pypx' |\
-                px-report       --seriesSpecial seriesStatus                                   \
-                                --printReport tabular                                          \
-                                --colorize dark                                                \
-                                --reportBodySeriesTags seriesStatus
+                }' | jq '.pypx' | $REPORT
+                
         fi
 
         if (( b_pushDo )) ; then
+                vprint "Performing PUSH on MRN $MRN..." 
+
                 curl -s -X 'POST' \
-                  'http://localhost:4005/api/v1/PACS/exec/pypx/' \
+                  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
                   -d '{
@@ -288,7 +324,7 @@ if (( ${#MRN} )) ; then
                   "listenerService": {
                     "value": "default"
                   },
-                  "pypx_find": {
+                  "PACSdirective": {
                     "AccessionNumber": "",
                     "PatientID": "'$MRN'",
                     "PatientName": "",
@@ -319,8 +355,9 @@ if (( ${#MRN} )) ; then
         fi
 
         if (( b_registerDo )) ; then
+                vprint "Performing REGSITER on MRN $MRN..." 
                 curl -s -X 'POST' \
-                  'http://localhost:4005/api/v1/PACS/exec/pypx/' \
+                  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
                   -H 'accept: application/json' \
                   -H 'Content-Type: application/json' \
                   -d '{
@@ -330,7 +367,7 @@ if (( ${#MRN} )) ; then
                   "listenerService": {
                     "value": "default"
                   },
-                  "pypx_find": {
+                  "PACSdirective": {
                     "AccessionNumber": "",
                     "PatientID": "'$MRN'",
                     "PatientName": "",
@@ -351,11 +388,11 @@ if (( ${#MRN} )) ; then
                     "ProtocolName": "",
                     "AcquisitionProtocolDescription": "",
                     "AcquisitionProtocolName": "",
-                    "withFeedBack": true,
+                    "withFeedBack": false,
                     "then": "register",
                     "thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"megalodon\", \"swiftServicesPACS\": \"WIP2\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
                     "dblogbasepath": "/home/dicom/log",
-                    "json_response": false
+                    "json_response": true
                   }
                 }' | jq
         fi
