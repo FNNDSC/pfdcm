@@ -121,8 +121,8 @@ def pypx_findExec(
     else:
         d_response['message']   = \
                 "'%s' is not a configured PACS service" % PACSobjName
-    with open('/home/dicom/tmp/resp.json', 'a') as db:
-        json.dump(d_response, db)
+    # with open('/home/dicom/tmp/resp.json', 'a') as db:
+    #     json.dump(d_response, db)
     return d_response
 
 
