@@ -160,7 +160,7 @@ curl -s -X 'GET' \
 #
 # you can pipe the output of the REST call to a report module, px-report
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -170,7 +170,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
@@ -221,7 +221,7 @@ curl -s -X 'POST' \
 # Retrieve only one SeriesInstanceUID -- 
 # Ugh.... at time of writing this below is still a WIP... skip ahead, please.
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -231,7 +231,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "",
     "PatientName": "",
@@ -263,7 +263,7 @@ curl -s -X 'POST' \
 # What the heck, let's just retrieve all the info for this ID... This def
 # works!
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -273,7 +273,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
@@ -303,7 +303,7 @@ curl -s -X 'POST' \
 }' | jq
 
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/retrieve/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -343,7 +343,7 @@ curl -s -X 'POST' \
 }'
 
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/exec/retrieve/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -385,7 +385,7 @@ curl -s -X 'POST' \
 
 # Request the STATUS
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -395,7 +395,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
@@ -426,7 +426,7 @@ curl -s -X 'POST' \
 
 # Request the STATUS and report on the results
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -436,7 +436,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
@@ -486,7 +486,7 @@ px-report       --seriesSpecial seriesStatus                                   \
 #                      SERVICES/PACS/<swiftServicesPACS>
 #
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -496,7 +496,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
@@ -529,7 +529,7 @@ curl -s -X 'POST' \
 # in CUBE swift storage to CUBE itself... again, see the CUBE resource
 # initialization we did in the beginning. Here is where we use it...
 curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/pypx/' \
+  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -539,7 +539,7 @@ curl -s -X 'POST' \
   "listenerService": {
     "value": "default"
   },
-  "pypx_find": {
+  "PACSdirective": {
     "AccessionNumber": "",
     "PatientID": "5644810",
     "PatientName": "",
