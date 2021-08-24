@@ -28,15 +28,11 @@ router.tags     = ['PACS QR services']
     '/PACS/thread/pypx/',
     response_model  = pacsQRmodel.PACSasync,
     summary         = '''
-    POST a directive to the `PACSservice` using subsystem `listenerService`.
-    NOTE that this an asynchronous request -- the call will be returned
-    immediately with an appropriate JSON reponse. To detemine status on
-    this job, POST the same payload to the `pypx` endpoing with a `status`
-    then verb in the contents body.
-
-    Internally, the directive is passed to a separate thread that services
-    the request. While possibly fast to start up, this API endpoint is subject
-    to the number of threads allowed on the underlying host.
+    Use this API route for RETRIEVE, PUSH, REGISTER operations and any others
+    that might be possibly "long lived". The actual processing is dispatched
+    to a separate thread so that the client receives a return immediately.
+    Clients should use a STATUS request on the same payload to determine
+    realtime status of the operation.
     '''
 )
 async def PACS_retrieveThreaded(
@@ -45,14 +41,17 @@ async def PACS_retrieveThreaded(
         PACSdirective       : pacsQRmodel.PACSqueryCore
 ):
     """
-    POST a retrieve to the `PACSservice`. The actual retrieve call is submitted
-    using using the python concurrent.futures module and returns immediately.
+    POST a `PACSdirective` to the `PACSservice`, and capture return comms
+    using the `listenerService`. The actual retrieve call is submitted using
+    the python `concurrent.futures` module so that the client receives an
+    immediate return.
 
-    Since the retrieve function is long-lived, a threaded approach is used so
-    that the fast API synchronous event loop is not locked.
+    This API endpoint is provided so that clients can call a `pfdcm` operation
+    and not block the fast API single event queue on a long-lived/long-compute
+    call.
 
-    Use a POST to the `sync/pypx` endpoint, typically with a `status` 
-    directive, to get data on the actual operation.
+    Use a POST to the `sync/pypx` endpoint, typically with a `status`
+    directive, to get information on the actual operation.
 
     Parameters
     ----------
@@ -78,112 +77,115 @@ async def PACS_retrieveThreaded(
                             )
     return {
             "directiveType"         : "threaded",
-            "response"              : {'future.done': future.done()},
+            "response"              : {
+                'future.done'   : future.done(),
+                'note'          : 'POST the same payload with a "status" verb to track.'
+            },
             "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
     }
 
-@router.post(
-    '/PACS/exec/pypx/',
-    response_model  = pacsQRmodel.PACSasync,
-    summary         = '''
-    POST a directive to the `PACSservice` using subsystem `listenerService`.
-    NOTE that this spawns a shell script process -- the call will be returned
-    immediately with an appropriate JSON reponse. To detemine status on this
-    job, POST the same payload to the `sync/pypx` endpoint with a `status`
-    `then` verb in the contents body.
-    '''
-)
-async def PACS_retrieveExec(
-        PACSservice         : pacsQRmodel.ValueStr,
-        listenerService     : pacsQRmodel.ValueStr,
-        PACSdirective       : pacsQRmodel.PACSqueryCore
-):
-    """
-    POST a retrieve to the `PACSservice`. The actual retrieve call is a
-    a shell background process, and thus returns immediately.
+# @router.post(
+#     '/PACS/exec/pypx/',
+#     response_model  = pacsQRmodel.PACSasync,
+#     summary         = '''
+#     POST a directive to the `PACSservice` using subsystem `listenerService`.
+#     NOTE that this spawns a shell script process -- the call will be returned
+#     immediately with an appropriate JSON reponse. To detemine status on this
+#     job, POST the same payload to the `sync/pypx` endpoint with a `status`
+#     `then` verb in the contents body.
+#     '''
+# )
+# async def PACS_retrieveExec(
+#         PACSservice         : pacsQRmodel.ValueStr,
+#         listenerService     : pacsQRmodel.ValueStr,
+#         PACSdirective       : pacsQRmodel.PACSqueryCore
+# ):
+#     """
+#     POST a retrieve to the `PACSservice`. The actual retrieve call is a
+#     a shell background process, and thus returns immediately.
 
-    Use a POST to the `pypx` endpoint, typically with a `status` directive,
-    to get data on the actual operation.
+#     Use a POST to the `pypx` endpoint, typically with a `status` directive,
+#     to get data on the actual operation.
 
-    Parameters
-    ----------
-    - `PACSservice`:        name of the internal PACS service to query
-    - `listenerService`:    name of the listener service to use locally
-    - `PACSdirective`:      the directive object
+#     Parameters
+#     ----------
+#     - `PACSservice`:        name of the internal PACS service to query
+#     - `listenerService`:    name of the listener service to use locally
+#     - `PACSdirective`:      the directive object
 
-    Return
-    ------
-    - PACSasync object
-    """
+#     Return
+#     ------
+#     - PACSasync object
+#     """
+#     d_exec  : dict  = {}
+#     d_exec  = pacsQRcontroller.pypx_findExec(
+#                                 PACSservice.value,
+#                                 listenerService.value,
+#                                 PACSdirective
+#                             )
+#     return {
+#             "directiveType"         : "shell",
+#             "response"              : d_exec,
+#             "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
+#     }
 
-    d_exec  : dict  = {}
-    d_exec  = pacsQRcontroller.pypx_findExec(
-                                PACSservice.value,
-                                listenerService.value,
-                                PACSdirective
-                            )
-    return {
-            "directiveType"         : "shell",
-            "response"              : d_exec,
-            "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
-    }
+# @router.post(
+#     '/PACS/query/',
+#     # response_model  = pacsQRmodel.PACSqueyReturnModel,
+#     summary         = '''
+#     POST a query to a `PACSservice`. This is a synonym for the `pypx`
+#     endpoint and kept currently only for historical reference.
+#     '''
+# )
+# async def PACS_query(
+#         PACSservice         : pacsQRmodel.ValueStr,
+#         listenerService     : pacsQRmodel.ValueStr,
+#         PACSquery           : pacsQRmodel.PACSqueryCore
+# ):
+#     """
+#     POST a query to the `PACSservice`. This is a synonym for the `pypx`
+#     endpoint and kept currently only for historical reference.
 
-@router.post(
-    '/PACS/query/',
-    # response_model  = pacsQRmodel.PACSqueyReturnModel,
-    summary         = '''
-    POST a query to a `PACSservice`. This is a synonym for the `pypx`
-    endpoint and kept currently only for historical reference.
-    '''
-)
-async def PACS_query(
-        PACSservice         : pacsQRmodel.ValueStr,
-        listenerService     : pacsQRmodel.ValueStr,
-        PACSquery           : pacsQRmodel.PACSqueryCore
-):
-    """
-    POST a query to the `PACSservice`. This is a synonym for the `pypx`
-    endpoint and kept currently only for historical reference.
+#     Parameters
+#     ----------
+#     - `PACSservice`:        name of the internal PACS service to query
+#     - `listenerService`:    name of the listener service to use locally
+#     - `PACSquery`:          the query object
 
-    Parameters
-    ----------
-    - `PACSservice`:        name of the internal PACS service to query
-    - `listenerService`:    name of the listener service to use locally
-    - `PACSquery`:          the query object
-
-    Return
-    ------
-    - PACSqueryReturnModel
-    """
-    return pacsQRcontroller.pypx_do(
-            PACSservice.value,
-            listenerService.value,
-            PACSquery
-    )
+#     Return
+#     ------
+#     - PACSqueryReturnModel
+#     """
+#     return pacsQRcontroller.pypx_do(
+#             PACSservice.value,
+#             listenerService.value,
+#             PACSquery
+#     )
 
 @router.post(
     '/PACS/sync/pypx/',
     # response_model  = pacsQRmodel.PACSqueyReturnModel,
     summary         = '''
-    Interact with the pypx_find module directly. Note this is a synchronous
-    operation, so this call will only return on successful completion of the
-    remote directive. All pypx operations (i.e. find/retrieve/push/register
-    are availble using this endpoint and appropriate body contents)
-.    '''
+    Use this API route for STATYS operations and any others that block but
+    which are "short lived". Since this is a synchronous operation, the call
+    will only return on successful completion of the remote directive.
+    '''
 )
 async def PACS_pypx(
         PACSservice         : pacsQRmodel.ValueStr,
         listenerService     : pacsQRmodel.ValueStr,
-        pypx_find           : pacsQRmodel.PACSqueryCore
+        PACSdirective       : pacsQRmodel.PACSqueryCore
 ):
     """
-    POST a directive to the `PACSservice`
+    POST a retrieve to the `PACSservice`, and capture return communication
+    using the `listenerService`. The client will only receive a return
+    payload when the PACSdirective has completed its remote execution.
 
     Parameters
     ----------
     - `PACSservice`:        name of the internal PACS service to query
     - `listenerService`:    name of the listener service to use locally
-    - `pypx_find`:          the pypx directive object
+    - `PACSdirective`:      the pypx directive object
 
     Return
     ------
@@ -192,6 +194,6 @@ async def PACS_pypx(
     return pacsQRcontroller.pypx_do(
             PACSservice.value,
             listenerService.value,
-            pypx_find
+            PACSdirective
     )
 
