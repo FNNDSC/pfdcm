@@ -424,6 +424,52 @@ curl -s -X 'POST' \
   }
 }' | jq
 
+# Request the STATUS and report on the results
+curl -s -X 'POST' \
+  'http://localhost:4005/api/v1/PACS/pypx/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "pypx_find": {
+    "AccessionNumber": "",
+    "PatientID": "5644810",
+    "PatientName": "",
+    "PatientBirthDate": "",
+    "PatientAge": "",
+    "PatientSex": "",
+    "StudyDate": "",
+    "StudyDescription": "",
+    "StudyInstanceUID": "",
+    "Modality": "",
+    "ModalitiesInStudy": "",
+    "PerformedStationAETitle": "",
+    "NumberOfSeriesRelatedInstances": "",
+    "InstanceNumber": "",
+    "SeriesDate": "",
+    "SeriesDescription": "",
+    "SeriesInstanceUID": "",
+    "ProtocolName": "",
+    "AcquisitionProtocolDescription": "",
+    "AcquisitionProtocolName": "",
+    "withFeedBack": false,
+    "then": "status",
+    "thenArgs": "",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
+}' | jq '.pypx' |\
+px-report       --seriesSpecial seriesStatus                                   \
+                --printReport tabular                                          \
+                --colorize dark                                                \
+                --reportBodySeriesTags seriesStatus
+
+
 #
 # Now, all the images will exist within the pfdcm container. If you
 # ran the container with appropriate volume mapping, then files should be
