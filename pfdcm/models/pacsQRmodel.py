@@ -44,6 +44,7 @@ class PACSasync(BaseModel):
     directiveType                       : str   = "async"
     response                            : dict
     timestamp                           : str
+    PACSdirective                       : dict
 
 class time(BaseModel):
     """A simple model that has a time string field"""
