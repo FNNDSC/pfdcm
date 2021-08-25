@@ -81,7 +81,8 @@ async def PACS_retrieveThreaded(
                 'future.done'   : future.done(),
                 'note'          : 'POST the same payload with a "status" verb to track.'
             },
-            "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
+            "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat(),
+            "PACSdirective"         : PACSdirective
     }
 
 # @router.post(
