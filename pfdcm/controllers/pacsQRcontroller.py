@@ -138,9 +138,10 @@ def pypx_do(
     All calls happen with a px-find, with behaviour specified in the `then`
     """
     d_response  : dict  = {
-        'status'    :   False,
-        'find'      :   {},
-        'message'   :   "No %s performed" % action
+        'status'        :   False,
+        'find'          :   {},
+        'message'       :   "No %s performed" % action,
+        'PACSdirective' :   queryTerms
     }
     d_service       : dict  = {}
     d_queryTerms    : dict  = jsonable_encoder(queryTerms)
@@ -162,8 +163,8 @@ def pypx_do(
     else:
         d_response['message']   = \
                 "'%s' is not a configured PACS service" % PACSobjName
-    with open('/home/dicom/tmp/resp.json', 'a') as db:
-        json.dump(d_response, db)
+    # with open('/home/dicom/tmp/resp.json', 'a') as db:
+    #     json.dump(d_response, db)
     return d_response
 
 def QRS_do(
