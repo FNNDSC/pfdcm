@@ -167,7 +167,7 @@ async def PACS_retrieveThreaded(
     '/PACS/sync/pypx/',
     # response_model  = pacsQRmodel.PACSqueyReturnModel,
     summary         = '''
-    Use this API route for STATYS operations and any others that block but
+    Use this API route for STATUS operations and any others that block but
     which are "short lived". Since this is a synchronous operation, the call
     will only return on successful completion of the remote directive.
     '''
