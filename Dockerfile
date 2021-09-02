@@ -24,10 +24,10 @@
 #
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8-slim
 
-LABEL DEVELOPMENT="                                         \
-    docker run --rm -it                                     \
-    -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
-    -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh     \
+LABEL DEVELOPMENT="                                                        \
+    docker run --rm -it                                                    \
+    -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
+    -v $PWD/pfdcm:/app:ro  local/pfdcm /start-reload.sh                    \
 "
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -48,4 +48,4 @@ RUN apt update              && \
 COPY xinetd_default /etc/default/xinetd
 
 ENV PORT=4005
-EXPOSE ${PORT} 10502 5555 11113
+EXPOSE ${PORT} 10402 10502 5555 11113

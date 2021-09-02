@@ -8,24 +8,24 @@
 
 # Build (for fish shell syntax!)
 set UID (id -u)
-docker build --build-arg UID=$UID -t local/pfdcm .   
+docker build --build-arg UID=$UID -t local/pfdcm .
 
 # Quick 'n dirty run -- this is what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
         local/pfdcm /start-reload.sh
 
 # Quick 'n dirty run -- with volume mapping.
 # Obviously change port mappings if needed (and in the Dockerfile)
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
         -v /home/dicom:/home/dicom                                             \
         local/pfdcm /start-reload.sh
 
 # Run with support for source debugging
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
         -v /home/dicom:/home/dicom                                             \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
