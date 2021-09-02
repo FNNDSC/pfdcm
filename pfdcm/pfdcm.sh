@@ -14,6 +14,7 @@ SYNOPSIS='
                         [--query] [--status] [--retrieve] [--push] [--register] \
                         [-j] [--json]                                           \
                         [-L|--listener <listenerToUse>]                         \
+                        [--listenerSetupGet <listenerToUse>]                    \
                         [-T|--reportType <reportType>]                          \
                         [-C|--csvCLI <csvCLI>]                                  \
                         [-H|--reportHeaderTags <reportHeaderTags]               \
@@ -159,9 +160,12 @@ SYNOPSIS='
         [-v <verbosity>]
         Set the verbosity. A postive value will display some additional info.
 
-        [-L <listenerToUse>]
+        [-L|--listener <listenerToUse>]
         The `pfdcm` listener to use. Note, this will almost always be
         "default".
+
+        [--listenerSetupGet <listenerKeyName>]
+        Get information on the listener key <listenerKeyName>.
 
         [--swiftSetupDo] [--swiftSetupGet <swiftKeyName>]
         [--swiftKeyName <swiftKeyName]
@@ -180,7 +184,7 @@ SYNOPSIS='
         Using the "--cubeSetupDo" and appropriately set variables, define the
         details of the CUBE instance for `pfdcm` to access with <cubeKeyName>.
 
-        [--PACSsetupDo] [--PACSsetupGet <PACStoUse>]
+        [--PACSsetupDo] [--PACSSetupGet <PACStoUse>]
         [-P|--PACS <PACStoUse>]
         [--aet <AET>]
         [--aetl <AET_listener>]
@@ -215,6 +219,16 @@ SYNOPSIS='
 
     * Initialize from defaults.json and restart services
     pfdcm.sh -u -i --
+
+    * Ask pfdcm for info on:
+    ** the listener
+    pfdcm.sh --listenerSetupGet default  --
+    ** the swift key "megalodon"
+    pfdcm.sh --swiftSetupGet megalodon --
+    ** the CUBE key "megalodon"
+    pfdcm.sh --cubeSetupGet megalodon --
+    ** the PACS service "orthanc"
+    pfdcm.sh --PACSSetupGet orthanc --
 
     * Query MRNs on the PACS
     pfdcm.sh -u --query -- "PatientID:LILLA-9729"
@@ -279,6 +293,7 @@ DICOMKEY=""
 URL=localhost:4005
 
 JSONFILE=defaults.json
+declare -i b_listenerSetupGet=0
 
 declare -i b_setupSwiftDo=0
 declare -i b_setupSwiftGet=0
@@ -319,6 +334,8 @@ while :; do
         -j|--json)              b_JSONreport=1              ;;
         -K|--key)               DICOMKEY=$2                 ;;
         -L|--listener)          LISTENER=$2                 ;;
+        --listenerSetupGet)     LISTENER=$2
+                                b_listenerSetupGet=1        ;;
         -T|--reportType)        REPORTTYPE=$2               ;;
         -C|--csvCLI)            CSVCLI=$2                   ;;
         -H|--reportHeaderTags)  REPORTHEADERTAGS=$2         ;;
@@ -438,7 +455,9 @@ setupSWIFTGet="
 pfdcm.sh  --swiftSetupGet megalodon --
 "
 if (( b_setupSwiftGet )) ; then
-    eval $(CURL GET SMDB/swift/$SWIFTKEYNAME/) | jq
+    cmd=$(CURL GET SMDB/swift/$SWIFTKEYNAME/)
+    vprint "$cmd"
+    eval "$cmd" | jq
 fi
 
 setupSWIFTDo="
@@ -469,7 +488,9 @@ setupCUBEGet="
 pfdcm.sh  --cubeSetupGet megalodon --
 "
 if (( b_setupCubeGet )) ; then
-    eval $(CURL GET SMDB/CUBE/$CUBEKEYNAME/) | jq
+    cmd=$(CURL GET SMDB/CUBE/$CUBEKEYNAME/)
+    vprint "$cmd"
+    eval "$cmd" | jq
 fi
 
 setupCUBEdo="
@@ -501,7 +522,9 @@ setupPACSGet="
 pfdcm.sh  --PACSSetupGet orthanc --
 "
 if (( b_setupPACSGet )) ; then
-    eval $(CURL GET PACSservice/$PACS/) | jq
+    cmd=$(CURL GET PACSservice/$PACS/)
+    vprint "$cmd"
+    eval "$cmd" | jq
 fi
 
 setupPACSdo="
@@ -530,6 +553,12 @@ function setupPACSdo {
 }
 if (( b_setupPACSDo )) ; then
     setupPACSdo
+fi
+
+if (( b_listenerSetupGet )) ; then
+    cmd=$(CURL GET listener/$LISTENER/)
+    vprint "$cmd"
+    eval "$cmd" | jq
 fi
 
 #
