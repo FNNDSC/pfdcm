@@ -198,6 +198,7 @@ SYNOPSIS='
 
     * Setup and save
     pfdcm.sh    --saveToJSON defaults.json                                     \
+                --URL http://localhost:4005                                    \
                 --swiftKeyName megalodon                                       \
                     --swiftIP 192.168.1.200                                    \
                     --swiftPort 8080                                           \
@@ -555,6 +556,14 @@ if (( b_setupPACSDo )) ; then
     setupPACSdo
 fi
 
+function setupPFDCMdo {
+    returnJSON=$1
+    if (( ${#returnJSON} )) ; then
+        JSON=$(jo -p pfdcm=$(jo info=$(jo url=$URL)))
+        echo "$JSON"
+    fi
+}
+
 if (( b_listenerSetupGet )) ; then
     cmd=$(CURL GET listener/$LISTENER/)
     vprint "$cmd"
@@ -581,6 +590,7 @@ if (( b_initFromJSON )) ; then
     AEC=$(              jq '.PACS.info.aec'                     $JSONFILE | tr -d '"')
     PACSSERVERIP=$(     jq '.PACS.info.serverIP'                $JSONFILE | tr -d '"')
     PACSSERVERPORT=$(   jq '.PACS.info.serverPort'              $JSONFILE | tr -d '"')
+    URL=$(              jq '.pfdcm.info.url'                    $JSONFILE | tr -d '"')
     b_showJSONsettings=1
 fi
 
@@ -604,11 +614,13 @@ if (( b_saveToJSON || b_showJSONsettings )) ; then
     jSWIFT=$(setupSwiftDo JSON)
     jCUBE=$(setupCubeDo JSON)
     jPACS=$(setupPACSdo JSON)
+    jPFDCM=$(setupPFDCMdo JSON)
     echo "$jSWIFT"  > $$.swift.json
     echo "$jCUBE"   > $$.cube.json
     echo "$jPACS"   > $$.pacs.json
-    JSONSETUP=$(jq -s '.[0] * .[1] * .[2]' $$.swift.json $$.cube.json $$.pacs.json)
-    rm $$.swift.json $$.cube.json $$.pacs.json
+    echo "$jPFDCM"  > $$.pfdcm.json
+    JSONSETUP=$(jq -s '.[0] * .[1] * .[2] * .[3]' $$.swift.json $$.cube.json $$.pacs.json $$.pfdcm.json)
+    rm $$.swift.json $$.cube.json $$.pacs.json $$.pfdcm.json
     echo "$JSONSETUP" > $JSONFILE
     if (( VERBOSITY > 0 )) ; then
         jq . <<< "$JSONSETUP"
