@@ -452,6 +452,30 @@ function CURL {
     fi
 }
 
+#
+# If specified, read various settings from the profile JSON
+#
+if (( b_initFromJSON )) ; then
+    vprint "Reading from $JSONFILE..."
+    SWIFTKEYNAME=$(     jq '.swift.info.swiftKeyName.value'     $JSONFILE | tr -d '"')
+    SWIFTIP=$(          jq '.swift.info.swiftInfo.ip'           $JSONFILE | tr -d '"')
+    SWIFTPORT=$(        jq '.swift.info.swiftInfo.port'         $JSONFILE | tr -d '"')
+    SWIFTLOGIN=$(       jq '.swift.info.swiftInfo.login'        $JSONFILE | tr -d '"')
+    CUBEKEYNAME=$(      jq '.CUBE.info.cubeKeyName.value'       $JSONFILE | tr -d '"')
+    CUBEURL=$(          jq '.CUBE.info.cubeInfo.url'            $JSONFILE | tr -d '"')
+    CUBEUSERNAME=$(     jq '.CUBE.info.cubeInfo.username'       $JSONFILE | tr -d '"')
+    CUBEUSERPASSWORD=$( jq '.CUBE.info.cubeInfo.password'       $JSONFILE | tr -d '"')
+    CUBEPACSSERVICE=$(  jq '.CUBE.cubePACSservice'              $JSONFILE | tr -d '"')
+    PACS=$(             jq '.PACS.name'                         $JSONFILE | tr -d '"')
+    AET=$(              jq '.PACS.info.aet'                     $JSONFILE | tr -d '"')
+    AETL=$(             jq '.PACS.info.aet_listener'            $JSONFILE | tr -d '"')
+    AEC=$(              jq '.PACS.info.aec'                     $JSONFILE | tr -d '"')
+    PACSSERVERIP=$(     jq '.PACS.info.serverIP'                $JSONFILE | tr -d '"')
+    PACSSERVERPORT=$(   jq '.PACS.info.serverPort'              $JSONFILE | tr -d '"')
+    URL=$(              jq '.pfdcm.info.url'                    $JSONFILE | tr -d '"')
+    b_showJSONsettings=1
+fi
+
 setupSWIFTGet="
 pfdcm.sh  --swiftSetupGet megalodon --
 "
@@ -568,30 +592,6 @@ if (( b_listenerSetupGet )) ; then
     cmd=$(CURL GET listener/$LISTENER/)
     vprint "$cmd"
     eval "$cmd" | jq
-fi
-
-#
-# If specified, read various settings from the profile JSON
-#
-if (( b_initFromJSON )) ; then
-    vprint "Reading from $JSONFILE..."
-    SWIFTKEYNAME=$(     jq '.swift.info.swiftKeyName.value'     $JSONFILE | tr -d '"')
-    SWIFTIP=$(          jq '.swift.info.swiftInfo.ip'           $JSONFILE | tr -d '"')
-    SWIFTPORT=$(        jq '.swift.info.swiftInfo.port'         $JSONFILE | tr -d '"')
-    SWIFTLOGIN=$(       jq '.swift.info.swiftInfo.login'        $JSONFILE | tr -d '"')
-    CUBEKEYNAME=$(      jq '.CUBE.info.cubeKeyName.value'       $JSONFILE | tr -d '"')
-    CUBEURL=$(          jq '.CUBE.info.cubeInfo.url'            $JSONFILE | tr -d '"')
-    CUBEUSERNAME=$(     jq '.CUBE.info.cubeInfo.username'       $JSONFILE | tr -d '"')
-    CUBEUSERPASSWORD=$( jq '.CUBE.info.cubeInfo.password'       $JSONFILE | tr -d '"')
-    CUBEPACSSERVICE=$(  jq '.CUBE.cubePACSservice'              $JSONFILE | tr -d '"')
-    PACS=$(             jq '.PACS.name'                         $JSONFILE | tr -d '"')
-    AET=$(              jq '.PACS.info.aet'                     $JSONFILE | tr -d '"')
-    AETL=$(             jq '.PACS.info.aet_listener'            $JSONFILE | tr -d '"')
-    AEC=$(              jq '.PACS.info.aec'                     $JSONFILE | tr -d '"')
-    PACSSERVERIP=$(     jq '.PACS.info.serverIP'                $JSONFILE | tr -d '"')
-    PACSSERVERPORT=$(   jq '.PACS.info.serverPort'              $JSONFILE | tr -d '"')
-    URL=$(              jq '.pfdcm.info.url'                    $JSONFILE | tr -d '"')
-    b_showJSONsettings=1
 fi
 
 #
