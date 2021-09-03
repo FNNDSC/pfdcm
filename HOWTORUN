@@ -30,3 +30,54 @@ docker run --rm -it                                                            \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
 
+#
+# Once the container is up and running, the services within the container
+# need to be activted.
+#
+# Note that the internal port that receives DICOM file PUSH is port
+# 1113. If your PACS server is configured to transmit data to another/different
+# port, one easy solution is to simply create a tunnel from your target port
+# to port 1113. For instance, assume that your PACS server sends to port 10402
+# of the machine hosting `pfdcm`. Let's call this machine for argument's sake
+# `titan.tch.harvard.edu`. Connect the two ports together:
+
+ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
+                rudolphpienaar@titan.tch.harvard.edu
+
+# Of course, a better solution is to have the PACS send to the "correct" port
+# from the get go. Alternatively, the internal `pfdcm` listening service can
+# also be configure to use this port.
+
+# Note that the underlying infrastructure relies on a "poke" event to the pfdcm
+# container xinetd on port 10502 to fire off the actual listener service that
+# uses port 1113. This somewhat indirect approach was needed since the listener
+# script couldn't be triggered by xinetd on the same port from which it
+# also receives DICOM transmisstions.
+
+# Once the system has initiated, you need to set up some swift and CUBE keys.
+# First, create a defaults.json:
+
+    pfdcm.sh    --saveToJSON defaults.json                                     \
+                --URL http://titan.tch.harvard.edu:4005                        \
+                --swiftKeyName titan                                           \
+                    --swiftIP 10.26.67.203                                     \
+                    --swiftPort 8080                                           \
+                    --swiftLogin chris:chris1234                               \
+                --PACS orthanc                                                 \
+                    --aet CHRISV3                                              \
+                    --aetl PACSDCM                                             \
+                    --aec PACSDCM                                              \
+                    --serverIP 134.174.12.21                                   \
+                    --serverPort 104                                           \
+                --cubeKeyName titan                                            \
+                    --cubeURL http://10.26.67.203:8000/api/vi/                 \
+                    --cubeUserName chris                                       \
+                    --cubePACSservice PACSDCM                                  \
+                    --cubeUserPassword chris:chris1234 --
+
+# Then, create persistent swift and CUBE data in the container
+pfdcm.sh -u --swiftSetupDo --
+pfdcm.sh -u --cubeSetupDo --
+
+# Verify that swift.json and cube.json have been created in the `services` dir:
+ls /home/dicom/services
