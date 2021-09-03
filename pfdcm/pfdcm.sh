@@ -75,7 +75,7 @@ SYNOPSIS='
         by default, a file called "pfdcm-defaults.json" is parsed if it
         exists.
 
-        [-u|--useDefaults]
+        [-u|--useDefaults|-d]
         If passed, read from defaults.json.
 
         <TAG1a:Value1a,TAG2a:Value2a,...;TAG1b:Value1b;...>
@@ -223,13 +223,22 @@ SYNOPSIS='
 
     * Ask pfdcm for info on:
     ** the listener
-    pfdcm.sh --listenerSetupGet default  --
+    pfdcm.sh -u --listenerSetupGet default  --
     ** the swift key "megalodon"
-    pfdcm.sh --swiftSetupGet megalodon --
+    pfdcm.sh -u --swiftSetupGet megalodon --
     ** the CUBE key "megalodon"
-    pfdcm.sh --cubeSetupGet megalodon --
+    pfdcm.sh -u --cubeSetupGet megalodon --
     ** the PACS service "orthanc"
-    pfdcm.sh --PACSSetupGet orthanc --
+    pfdcm.sh -u --PACSSetupGet orthanc --
+
+    * Read defaults and set...
+    ** swift info (key read from defaults.json)
+    pfdcm.sh -u --swiftSetupDo  --
+    ** CUBE (key read from defaults.json)
+    pfdcm.sh -u --cubeSetupDo --
+    ** the PACS service (key read from defaults.json)
+    pfdcm.sh -u --PACSSetupDo --
+
 
     * Query MRNs on the PACS
     pfdcm.sh -u --query -- "PatientID:LILLA-9729"
@@ -303,7 +312,7 @@ SWIFTIP=""
 SWIFTPORT=""
 SWIFTLOGIN=""
 
-declare -i b_setupCubeDo=0
+declare -i b_setupCUBEdo=0
 declare -i b_setupCubeGet=0
 CUBEKEYNAME=""
 CUBEUSERNAME=""
@@ -325,7 +334,7 @@ while :; do
             printf "%s" "$SYNOPSIS"
             exit 1                                          ;;
         -i|--initServices)      b_initDo=1                  ;;
-        -u|--useDefaults)       b_useDefaults=1
+        -u|-d|--useDefaults)    b_useDefaults=1
                                 b_initFromJSON=1            ;;
         -q|--query)             b_queryDo=1                 ;;
         -r|--retrieve)          b_retrieveDo=1              ;;
@@ -354,7 +363,7 @@ while :; do
         --swiftIP)              SWIFTIP=$2                  ;;
         --swiftPort)            SWIFTPORT=$2                ;;
         --swiftLogin)           SWIFTLOGIN=$2               ;;
-        --cubeSetupDo)          b_setupCubeDo=1             ;;
+        --cubeSetupDo)          b_setupCUBEdo=1             ;;
         --cubeSetupGet)         b_setupCubeGet=1
                                 CUBEKEYNAME=$2              ;;
         --cubeKeyName)          CUBEKEYNAME=$2              ;;
@@ -525,7 +534,7 @@ pfdcm.sh       --cubeSetupDo                                    \
                --cubeUserName chris                             \
                --cubeUserPassword chris:chris1234 --
 "
-function setupCubeDo {
+function setupCUBEdo {
     returnJSON=$1
     JSON=$(jo -p cubeKeyName=$(jo value=$CUBEKEYNAME) \
                  cubeInfo=$(jo url=$CUBEURL username=$CUBEUSERNAME password=$CUBEUSERPASSWORD))
@@ -539,7 +548,7 @@ function setupCubeDo {
         eval "$CMD" | jq
     fi
 }
-if (( b_setupCubeDo )) ; then
+if (( b_setupCUBEdo )) ; then
     setupCUBEdo
 fi
 
@@ -612,7 +621,7 @@ if (( b_saveToJSON || b_showJSONsettings )) ; then
         JSONFILE=show-$JSONFILE
     fi
     jSWIFT=$(setupSwiftDo JSON)
-    jCUBE=$(setupCubeDo JSON)
+    jCUBE=$(setupCUBEdo JSON)
     jPACS=$(setupPACSdo JSON)
     jPFDCM=$(setupPFDCMdo JSON)
     echo "$jSWIFT"  > $$.swift.json
