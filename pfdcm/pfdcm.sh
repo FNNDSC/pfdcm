@@ -701,7 +701,7 @@ for EXPR in ${listEXPR//;/ } ; do
         if (( b_pushDo )) ; then
                 JSON=$(jq '.PACSdirective += {
                     "then": "push",
-                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"swift\": \"megalodon\", \"swiftServicesPACS\": \"WIP2\", \"swiftPackEachDICOM\":   true}",
+                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"swift\": \"'$SWIFTKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"swiftPackEachDICOM\":   true}",
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
@@ -710,7 +710,7 @@ for EXPR in ${listEXPR//;/ } ; do
         if (( b_registerDo )) ; then
                 JSON=$(jq '.PACSdirective += {
                     "then": "register",
-                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"megalodon\", \"swiftServicesPACS\": \"WIP2\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
+                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"'$CUBEKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
