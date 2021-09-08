@@ -71,4 +71,32 @@ http :4005/api/v1/hello/ echoBack==lol
 
 For full exemplar documented examples, see `pfdcm/workflow.sh` in this repository as well as `HOWTORUN`. Also consult the `pfdcm/pfdcm.sh` script for more details.
 
+#### Quick-n-dirty CLI example
+
+Once you have started the container, the `pfdcm.sh` script is probably the easiest way to interact with the service. First, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID`:
+
+```bash
+pfdcm.sh -u --query -- "PatientID:2233445"
+```
+
+In general, you can use any reasonable DICOM tag to drive the query. For more fine tuned searches, you can do
+
+```bash
+pfdcm.sh -u --query -- "PatientID:2233445,StudyDate:20210901"
+```
+
+to limit the query to, in this case, a specific study date. Once you have determined an image set of interest, you can request a `retrieve`
+
+```bash
+pfdcm.sh -u --retrieve -- "PatientID:2233445,StudyDate:20210901"
+```
+
+which will handle incoming file transmission from the PACS and store/pack the files on the local (container) filesystem. Note that the `retrieve` is an asynchronous request and will return to the client immediately. To determine the status of the operation,
+
+```bash
+pfdcm.sh -u --status -- "PatientID:2233445,StudyDate:20210901"
+```
+
+Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info. This page (and wiki) will be updated.
+
 _-30-_
