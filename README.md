@@ -69,6 +69,6 @@ Using [httpie](https://httpie.org/)
 http :4005/api/v1/hello/ echoBack==lol
 ```
 
-For full exemplar documented examples, see `workflow.sh` in this repository.
+For full exemplar documented examples, see `pfdcm/workflow.sh` in this repository as well as `HOWTORUN`. Also consult the `pfdcm/pfdcm.sh` script for more details.
 
 _-30-_

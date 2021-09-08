@@ -49,7 +49,8 @@ ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
 # also be configure to use this port.
 
 # Once the system has initiated, you need to set up some swift and CUBE keys.
-# First, create a defaults.json:
+# First, create a properly defined defaults.json (using of course your specific
+# values where required):
 
     pfdcm.sh    --saveToJSON defaults.json                                     \
                 --URL http://titan.tch.harvard.edu:4005                        \
@@ -57,7 +58,7 @@ ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
                     --swiftIP 10.26.67.203                                     \
                     --swiftPort 8080                                           \
                     --swiftLogin chris:chris1234                               \
-                --PACS orthanc                                                 \
+                --PACS PACSDCM                                                 \
                     --aet CHRISV3                                              \
                     --aetl PACSDCM                                             \
                     --aec PACSDCM                                              \
@@ -82,3 +83,7 @@ ls /home/dicom/services
 # script couldn't be triggered by xinetd on the same port from which it
 # also receives DICOM transmisstions.
 pfdcm.sh -u -i --
+
+# At this stage you should be able to perform queries/retrieves/status/etc. To
+# see the actual http/curl comms that the agent transmits to the service, add
+# a `-v 1` to the `pfdcm.sh` calls.
