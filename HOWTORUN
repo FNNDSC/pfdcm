@@ -48,12 +48,6 @@ ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
 # from the get go. Alternatively, the internal `pfdcm` listening service can
 # also be configure to use this port.
 
-# Note that the underlying infrastructure relies on a "poke" event to the pfdcm
-# container xinetd on port 10502 to fire off the actual listener service that
-# uses port 1113. This somewhat indirect approach was needed since the listener
-# script couldn't be triggered by xinetd on the same port from which it
-# also receives DICOM transmisstions.
-
 # Once the system has initiated, you need to set up some swift and CUBE keys.
 # First, create a defaults.json:
 
@@ -81,3 +75,10 @@ pfdcm.sh -u --cubeSetupDo --
 
 # Verify that swift.json and cube.json have been created in the `services` dir:
 ls /home/dicom/services
+
+# Note that the underlying infrastructure relies on a "poke" event to the pfdcm
+# container xinetd on port 10502 to fire off the actual listener service that
+# uses port 1113. This somewhat indirect approach was needed since the listener
+# script couldn't be triggered by xinetd on the same port from which it
+# also receives DICOM transmisstions.
+pfdcm.sh -u -i --
