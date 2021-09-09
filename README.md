@@ -1,4 +1,6 @@
-# `pfdcm` - An Opensource REST API to communicate with any number of PACS instances concurrently
+# pfdcm
+
+An Open-source REST API to communicate with any number of PACS instances concurrently
 
 ## Abstract
 
@@ -27,6 +29,8 @@ Note however that this full experience does imply using two separate REST-API se
 * the `pfdcm` API to `Query`/`Retrieve`/`Push-to-swift`/`Register-to-CUBE`
 * the `CUBE` API to download an image file
 
+
+
 ## Usage
 
 Simplest build:
@@ -45,7 +49,51 @@ docker run --rm -it                                                            \
         local/pfdcm /start-reload.sh
 ```
 
-### Development
+Running with hot-reloading
+
+```bash
+docker run --rm -it                                                            \
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -v $PWD/pfdcm:/app:ro                                                  \
+        local/pfdcm /start-reload.sh
+```
+
+
+
+## Development
+
+#### Setting up PACS Server
+
+The PACS server used typically for development is Orthanc. We use a slightly customized version of this, called [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc). Clone this repository locally and checkout to the `persistent-db` branch.
+
+```bash
+git clone https://github.com/FNNDSC/orthanc-fnndsc
+git checkout persistent-db
+```
+
+In this directory, find the `orthanc.json` file and make the following edits
+
+- Find the `"DicomModalities"` block in the JSON file, and find the `"CHRISLOCAL"` key.
+
+  ```json
+  // ...
+  "DicomModalities": {
+  	// ...
+  	"CHRISLOCAL" : ["CHRISLOCAL", "192.168.1.189", 11113 ],
+  }
+  ```
+
+- Edit the IP address in this key (192.168.1.189 in this example), to your local machine's IP address. You can either find this by using the `ip` command or set this to 127.0.0.1 (loopback IP).
+
+- Now run orthanc with
+
+  ```bash
+  ./make.sh -i
+  ```
+
+To make sure Orthanc started successfully, open `http://localhost:8042` in a browser and you should get a Basic Auth prompt. Use username `orthanc` and password `orthanc` which are the defaults. You should now be able to interact with Orthanc and upload files.
+
+#### Running a local PFDCM API
 
 Colorful, <kbd>Ctrl-C</kbd>-able server with live/hot reload. Source code changes do not requre a server restart (although some server components might need to be re-initialized).
 Changes are applied automatically when the file is saved to disk.
@@ -56,6 +104,15 @@ docker run --rm -it                                                            \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
 ```
+
+Now you'll need to initialize PFDCM to use it as an API for ChRIS UI. Either follow the instructions in [workflow.sh](./examples/workflow.sh) or use a REST client like [Insomnia](https://insomnia.rest/) (a [request collection file](./examples/Insomnia.yaml) is provided, import this) or PostMan.
+
+- Initialize the xinetd listener. Simply use the default.
+- Register a PACS service, orthanc in our case. Make sure that the `serverIP` field matches exactly with the IP address of your machine that you put in `orthanc.json` in a previous step.
+- Register a local CUBE and a local Swift. The `"cubeKeyName"` and `"swifteyName"` that you provide here will be used in setting up ChRIS_ui.
+- Test by performing a find query.
+
+
 
 ### API swagger
 

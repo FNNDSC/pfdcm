@@ -1,0 +1,441 @@
+_type: export
+__export_format: 4
+__export_date: 2021-09-09T07:41:20.789Z
+__export_source: insomnia.desktop.app:v2021.4.1
+resources:
+  - _id: req_d0ee2a582343453ba9a13e3a6e76251f
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628245178720
+    created: 1628075490653
+    url: http://localhost:4005/api/v1/SMDB/swift/list/
+    name: List Swift
+    description: ""
+    method: GET
+    body: {}
+    parameters: []
+    headers: []
+    authentication: {}
+    metaSortKey: -1627982659492
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: wrk_a7f03f943cac4888aa8fad70e761398f
+    parentId: null
+    modified: 1628075427447
+    created: 1628075427447
+    name: pfdcm:local
+    description: ""
+    scope: collection
+    _type: workspace
+  - _id: req_620a2e4b8b8049408bdad07637756916
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628272356601
+    created: 1628075427463
+    url: http://localhost:4005/api/v1/SMDB/CUBE/list/
+    name: List CUBE
+    description: ""
+    method: GET
+    body: {}
+    parameters: []
+    headers: []
+    authentication: {}
+    metaSortKey: -1627982659467
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_d4dfbb4fe1f4480bb39bb00828071d1d
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628244319620
+    created: 1628076003262
+    url: http://localhost:4005/api/v1/PACSservice/list/
+    name: List PACS
+    description: ""
+    method: GET
+    body: {}
+    parameters: []
+    headers: []
+    authentication: {}
+    metaSortKey: -1627982659454.5
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_9b082c809e2f4a5e87f2070414fc82ca
+    parentId: fld_68510f08c40c462e8ca5517768be620e
+    modified: 1628272237990
+    created: 1628075808266
+    url: http://localhost:4005/api/v1/listener/initialize/
+    name: Init Listener
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"value": "default"
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_a629d1cf957a45cfb9374e1652ba7846
+    authentication: {}
+    metaSortKey: -1627982666211
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: fld_68510f08c40c462e8ca5517768be620e
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628075427458
+    created: 1628075427458
+    name: Config
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1627982659442
+    _type: request_group
+  - _id: req_b9c8423c03fd42778d18a80ee1e9fea7
+    parentId: fld_68510f08c40c462e8ca5517768be620e
+    modified: 1629306211981
+    created: 1628075480911
+    url: http://localhost:4005/api/v1/SMDB/swift/
+    name: Register Swift
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "swiftKeyName": {
+            "value": "local"
+          },
+          "swiftInfo": {
+            "ip": "172.17.0.1",
+            "port": "8080",
+            "login": "chris:chris1234"
+          }
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_e9bbdd6e44604abf8cc4b47a3dae0a89
+    authentication: {}
+    metaSortKey: -1627982666161
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_128d5f052a344f0b944c4be8606fe39c
+    parentId: fld_68510f08c40c462e8ca5517768be620e
+    modified: 1629306221032
+    created: 1628075427460
+    url: http://localhost:4005/api/v1/SMDB/CUBE/
+    name: Register CUBE
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "cubeKeyName": {
+            "value": "local"
+          },
+          "cubeInfo": {
+            "url": "http://172.17.0.1:8000/api/v1/",
+            "username": "chris",
+            "password": "chris1234"
+          }
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_e9bbdd6e44604abf8cc4b47a3dae0a89
+    authentication: {}
+    metaSortKey: -1627982666086
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_deb1730cc6d645538d6ceb023375cb69
+    parentId: fld_68510f08c40c462e8ca5517768be620e
+    modified: 1629991198385
+    created: 1628075906287
+    url: http://localhost:4005/api/v1/PACSservice/orthanc/
+    name: Register PACS
+    description: ""
+    method: PUT
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"info": {
+        		"aet": "CHRISLOCAL",
+            "aet_listener": "ORTHANC",
+            "aec": "ORTHANC",
+            "serverIP": "10.0.0.100",
+            "serverPort": "4242"
+          }
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_991699d90d8a4fb8a0eef0d71607f742
+    authentication: {}
+    metaSortKey: -1627982666011
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_1a524e0edd844d6cb528b4412dccd13d
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1629907531798
+    created: 1628075427466
+    url: http://localhost:4005/api/v1/PACS/sync/pypx/
+    name: Find
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"PACSservice": {
+            "value": "orthanc"
+          },
+          "listenerService": {
+            "value": "default"
+          },
+        	"PACSdirective": {
+            "PatientID": "DAI000982",
+        		"then": "status"
+        	}
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_ed7fbebd9e5b40c49c68674ccaf680d9
+    authentication: {}
+    metaSortKey: -1627981339140.1562
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_b8e7c24c09bf4941a3c7019d15ad196f
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1629909291857
+    created: 1628075427467
+    url: http://localhost:4005/api/v1/PACS/thread/pypx/
+    name: Retrieve
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"PACSservice": {
+            "value": "orthanc"
+          },
+          "listenerService": {
+            "value": "default"
+          },
+        	"PACSdirective": {
+        		"PatientID": "1449c1d",
+        		"then": "retrieve"
+        	}
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_2149f70f5fa14ad0a7c178f5f4e96c50
+    authentication: {}
+    metaSortKey: -1627980018838.3125
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_397c34bfff1c4585901102231fe1ca4e
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1629898617816
+    created: 1628075427471
+    url: http://localhost:4005/api/v1/PACS/thread/pypx/
+    name: Push
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: >-
+        {
+        	"PACSservice": {
+        		"value": "orthanc"
+        	},
+        	"listenerService": {
+        		"value": "default"
+        	},
+        	"PACSdirective": {
+        		"PatientID": "DAI000982",
+        		"then": "push",
+        		"thenArgs": "{\"db\": \"/home/dicom/log\", \"swift\": \"local\", \"swiftServicesPACS\": \"Orthanc\", \"swiftPackEachDICOM\": true}"
+        	}
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_2149f70f5fa14ad0a7c178f5f4e96c50
+    authentication: {}
+    metaSortKey: -1627979994811.9062
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_16a0617330e14e269539932437eae92d
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1629898621979
+    created: 1628075427472
+    url: http://localhost:4005/api/v1/PACS/thread/pypx/
+    name: Register
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: >-
+        {
+        	"PACSservice": {
+            "value": "orthanc"
+          },
+          "listenerService": {
+            "value": "default"
+          },
+        	"PACSdirective": {
+        		"PatientID": "DAI000982",
+        		"then": "register",
+        		"thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"local\", \"swiftServicesPACS\": \"Orthanc\", \"parseAllFilesWithSubStr\": \"dcm\"}"
+        	}
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_2149f70f5fa14ad0a7c178f5f4e96c50
+    authentication: {}
+    metaSortKey: -1627979970735.5
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_5070e0eae5bd4cbb99c1e75b5995327d
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1629898624160
+    created: 1629307072691
+    url: http://localhost:4005/api/v1/PACS/thread/pypx/
+    name: Retrieve, Push, Register
+    description: ""
+    method: POST
+    body:
+      mimeType: application/json
+      text: >-
+        {
+        	"PACSservice": {
+            "value": "orthanc"
+          },
+          "listenerService": {
+            "value": "default"
+          },
+        	"PACSdirective": {
+        		"PatientID": "1449c1d",
+        		"then": "retrieve,push,register",
+        		"thenArgs": "{},{\"db\": \"/home/dicom/log\", \"swift\": \"local\", \"swiftServicesPACS\": \"Orthanc\", \"swiftPackEachDICOM\": true},{\"db\": \"/home/dicom/log\", \"CUBE\": \"local\", \"swiftServicesPACS\": \"Orthanc\", \"parseAllFilesWithSubStr\": \"dcm\"}"
+        	}
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+        id: pair_2149f70f5fa14ad0a7c178f5f4e96c50
+    authentication: {}
+    metaSortKey: -1627979970685.5
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: env_158ba806fe214e23b0f276a17169f95a
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628075427452
+    created: 1628075427452
+    name: Base Environment
+    data: {}
+    dataPropertyOrder: null
+    color: null
+    isPrivate: false
+    metaSortKey: 1627977190763
+    _type: environment
+  - _id: jar_814ecaf908b64f53a256b84e88a7e8da
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628075427454
+    created: 1628075427454
+    name: Default Jar
+    cookies: []
+    _type: cookie_jar
+  - _id: spc_195f70cd2b834d54b894ddcc391bdbbf
+    parentId: wrk_a7f03f943cac4888aa8fad70e761398f
+    modified: 1628075427488
+    created: 1628075427455
+    fileName: pfdcm:local
+    contents: ""
+    contentType: yaml
+    _type: api_spec
