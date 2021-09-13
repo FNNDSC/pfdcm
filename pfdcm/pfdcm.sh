@@ -339,7 +339,7 @@ while :; do
         -q|--query)             b_queryDo=1                 ;;
         -r|--retrieve)          b_retrieveDo=1              ;;
         -p|--push)              b_pushDo=1                  ;;
-        -g|--regsiter)          b_registerDo=1              ;;
+        -g|--register)          b_registerDo=1              ;;
         -s|--status)            b_statusDo=1                ;;
         -j|--json)              b_JSONreport=1              ;;
         -K|--key)               DICOMKEY=$2                 ;;
