@@ -618,18 +618,20 @@ if (( b_saveToJSON || b_showJSONsettings )) ; then
         # contents. These should be identical to the original
         # JSON settings file
         ORIGJSON=$JSONFILE
-        JSONFILE=show-$JSONFILE
+        JSONFILE=/tmp/show-$JSONFILE
     fi
     jSWIFT=$(setupSwiftDo JSON)
     jCUBE=$(setupCUBEdo JSON)
     jPACS=$(setupPACSdo JSON)
     jPFDCM=$(setupPFDCMdo JSON)
-    echo "$jSWIFT"  > $$.swift.json
-    echo "$jCUBE"   > $$.cube.json
-    echo "$jPACS"   > $$.pacs.json
-    echo "$jPFDCM"  > $$.pfdcm.json
-    JSONSETUP=$(jq -s '.[0] * .[1] * .[2] * .[3]' $$.swift.json $$.cube.json $$.pacs.json $$.pfdcm.json)
-    rm $$.swift.json $$.cube.json $$.pacs.json $$.pfdcm.json
+    echo "$jSWIFT"  > /tmp/$$.swift.json
+    echo "$jCUBE"   > /tmp/$$.cube.json
+    echo "$jPACS"   > /tmp/$$.pacs.json
+    echo "$jPFDCM"  > /tmp/$$.pfdcm.json
+    JSONSETUP=$(jq -s '.[0] * .[1] * .[2] * .[3]'       \
+                /tmp/$$.swift.json /tmp/$$.cube.json    \
+                /tmp/$$.pacs.json /tmp/$$.pfdcm.json)
+    rm /tmp/$$.swift.json /tmp/$$.cube.json /tmp/$$.pacs.json /tmp/$$.pfdcm.json
     echo "$JSONSETUP" > $JSONFILE
     if (( VERBOSITY > 0 )) ; then
         jq . <<< "$JSONSETUP"
@@ -639,6 +641,7 @@ if (( b_saveToJSON || b_showJSONsettings )) ; then
         if (( ! $? )) ; then
             vprint "Settings parsed successfully."
         fi
+        rm $JSONFILE
     fi
 fi
 
