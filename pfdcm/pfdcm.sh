@@ -200,7 +200,7 @@ SYNOPSIS='
     pfdcm.sh    --saveToJSON defaults.json                                     \
                 --URL http://localhost:4005                                    \
                 --swiftKeyName megalodon                                       \
-                    --swiftIP 192.168.1.200                                    \
+                    --swiftIP 192.168.1.216                                    \
                     --swiftPort 8080                                           \
                     --swiftLogin chris:chris1234                               \
                 --PACS orthanc                                                 \
@@ -210,10 +210,10 @@ SYNOPSIS='
                     --serverIP 192.168.1.189                                   \
                     --serverPort 4242                                          \
                 --cubeKeyName megalodon                                        \
-                    --cubeURL http://192.168.1.216:8000/api/vi/                \
+                    --cubeURL http://192.168.1.216:8000/api/v1/                \
                     --cubeUserName chris                                       \
                     --cubePACSservice newPACS                                  \
-                    --cubeUserPassword chris:chris1234 --
+                    --cubeUserPassword chris1234 --
 
     * Initialize from saved JSON setup
     pfdcm.sh --profile pfdcm.sh.json --
