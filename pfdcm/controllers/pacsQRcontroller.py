@@ -57,7 +57,7 @@ def pypx_threadedDo(
     #             )
     return future
 
-def pypx_findExec(
+def pypx_multiprocessDo(
         PACSobjName             : str,
         listenerObjName         : str,
         queryTerms              : pacsQRmodel.PACSqueryCore,

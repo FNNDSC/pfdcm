@@ -35,7 +35,7 @@ router.tags     = ['PACS QR services']
     realtime status of the operation.
     '''
 )
-async def PACS_retrieveThreaded(
+async def PACS_serviceThreaded(
         PACSservice         : pacsQRmodel.ValueStr,
         listenerService     : pacsQRmodel.ValueStr,
         PACSdirective       : pacsQRmodel.PACSqueryCore
@@ -119,7 +119,7 @@ async def PACS_retrieveThreaded(
 #     - PACSasync object
 #     """
 #     d_exec  : dict  = {}
-#     d_exec  = pacsQRcontroller.pypx_findExec(
+#     d_exec  = pacsQRcontroller.pypx_multiprocessDo(
 #                                 PACSservice.value,
 #                                 listenerService.value,
 #                                 PACSdirective
