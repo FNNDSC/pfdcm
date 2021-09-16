@@ -413,7 +413,11 @@ function vprint {
 function reportify {
     BODYTAGOVERRIDE=$1
     if (( ${#BODYTAGOVERRIDE} )) ; then
-        REPORTBODYTAGS="$BODYTAGOVERRIDE"
+        if (( ${#REPORTBODYTAGS} )) ; then
+            REPORTBODYTAGS="$REPORTBODYTAGS,$BODYTAGOVERRIDE"
+        else
+            REPORTBODYTAGS="$BODYTAGOVERRIDE"
+        fi
     fi
     REPORT="px-report   --colorize dark \
                         --printReport $REPORTTYPE \
