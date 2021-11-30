@@ -10,6 +10,7 @@ SYNOPSIS='
 
         pfdcm.sh        [-S|--saveToJSON <file>] [-I|--profile <file>]          \
                         [-u|--useDefaults]                                      \
+                        [--no-proxy]                                            \
                         [-q] [-s] [-r] [-p] [-g]                                \
                         [--query] [--status] [--retrieve] [--push] [--register] \
                         [-j] [--json]                                           \
@@ -221,15 +222,16 @@ SYNOPSIS='
     * Initialize from defaults.json and restart services
     pfdcm.sh -u -i --
 
-    * Ask pfdcm for info on:
+    * Ask pfdcm for info on services:
+    * NOTE: do not pass a "-u" since this might override CLI values.
     ** the listener
-    pfdcm.sh -u --listenerSetupGet default  --
+    pfdcm.sh --listenerSetupGet default  --
     ** the swift key "megalodon"
-    pfdcm.sh -u --swiftSetupGet megalodon --
+    pfdcm.sh --swiftSetupGet megalodon --
     ** the CUBE key "megalodon"
-    pfdcm.sh -u --cubeSetupGet megalodon --
+    pfdcm.sh --cubeSetupGet megalodon --
     ** the PACS service "orthanc"
-    pfdcm.sh -u --PACSSetupGet orthanc --
+    pfdcm.sh --PACSSetupGet orthanc --
 
     * Read defaults and set...
     ** swift info (key read from defaults.json)
@@ -238,7 +240,6 @@ SYNOPSIS='
     pfdcm.sh -u --cubeSetupDo --
     ** the PACS service (key read from defaults.json)
     pfdcm.sh -u --PACSSetupDo --
-
 
     * Query MRNs on the PACS
     pfdcm.sh -u --query -- "PatientID:LILLA-9729"
@@ -291,6 +292,7 @@ declare -i b_showJSONsettings=0
 
 declare -i b_saveToJSON=0
 declare -i b_initFromJSON=0
+declare -i b_noproxy=0
 
 declare -i VERBOSITY=0
 
@@ -300,7 +302,7 @@ CSVCLI="--csvPrettify --csvPrintHeaders"
 REPORTHEADERTAGS=""
 REPORTBODYTAGS=""
 DICOMKEY=""
-URL=localhost:4005
+URL=http://localhost:4005
 
 JSONFILE=defaults.json
 declare -i b_listenerSetupGet=0
@@ -333,6 +335,7 @@ while :; do
         -h|-\?|-x|--help)
             printf "%s" "$SYNOPSIS"
             exit 1                                          ;;
+        --no-proxy)             b_noproxy=1                 ;;
         -i|--initServices)      b_initDo=1                  ;;
         -u|-d|--useDefaults)    b_useDefaults=1
                                 b_initFromJSON=1            ;;
@@ -458,10 +461,33 @@ function CURL {
     VERB=$1
     ROUTE=$2
     JSON="$3"
+    NOPROXY=""
+    if (( b_noproxy )) ; then
+        NOPROXY="http_proxy= "
+    fi
     if (( ${#JSON} )) ; then
-        echo "curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH) -d '$JSON'"
+        echo "$NOPROXY curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH) -d '$JSON'"
     else
-        echo "curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH)"
+        echo "$NOPROXY curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH)"
+    fi
+}
+
+function evaljq {
+    CMD=$1
+    eval "$CMD" | jq
+    if (( $? )) ; then
+        MSG1="An error in parsing the command was detected."
+        MSG2="This is often caused when using the command in a proxied environment."
+        MSG3="Try the command again, this time using '--no-proxy'"
+        if [[ -e $(which tput) ]] ; then
+            tput setaf 1; echo "$MSG1"
+            echo ""
+            tput setaf 2; echo -e "$MSG2\n$MSG3"
+        else
+            echo "$MSG1"
+            echo ""
+            echo -e "$MSG2\n$MSG3"
+        fi
     fi
 }
 
@@ -495,7 +521,7 @@ pfdcm.sh  --swiftSetupGet megalodon --
 if (( b_setupSwiftGet )) ; then
     cmd=$(CURL GET SMDB/swift/$SWIFTKEYNAME/)
     vprint "$cmd"
-    eval "$cmd" | jq
+    evaljq "$cmd"
 fi
 
 setupSWIFTDo="
@@ -515,7 +541,7 @@ function setupSwiftDo {
         echo "$JSONSWIFT"
     else
         CMD=$(CURL POST SMDB/swift/ "$JSON")
-        eval "$CMD" | jq
+        evaljq "$CMD" 
     fi
 }
 if (( b_setupSwiftDo )) ; then
@@ -528,7 +554,7 @@ pfdcm.sh  --cubeSetupGet megalodon --
 if (( b_setupCubeGet )) ; then
     cmd=$(CURL GET SMDB/CUBE/$CUBEKEYNAME/)
     vprint "$cmd"
-    eval "$cmd" | jq
+    evaljq "$cmd"
 fi
 
 setupCUBEdo="
@@ -549,7 +575,7 @@ function setupCUBEdo {
         echo "$JSONCUBE"
     else
         CMD=$(CURL POST SMDB/CUBE/ "$JSON")
-        eval "$CMD" | jq
+        evaljq "$CMD"
     fi
 }
 if (( b_setupCUBEdo )) ; then
@@ -562,7 +588,7 @@ pfdcm.sh  --PACSSetupGet orthanc --
 if (( b_setupPACSGet )) ; then
     cmd=$(CURL GET PACSservice/$PACS/)
     vprint "$cmd"
-    eval "$cmd" | jq
+    evaljq "$cmd"
 fi
 
 setupPACSdo="
@@ -586,7 +612,7 @@ function setupPACSdo {
         echo "$PACSname"
     else
         CMD=$(CURL PUT PACSservice/$PACS/ "$JSON")
-        eval "$CMD" | jq
+        evaljq "$CMD"
     fi
 }
 if (( b_setupPACSDo )) ; then
@@ -604,7 +630,7 @@ function setupPFDCMdo {
 if (( b_listenerSetupGet )) ; then
     cmd=$(CURL GET listener/$LISTENER/)
     vprint "$cmd"
-    eval "$cmd" | jq
+    evaljq "$cmd"
 fi
 
 #
@@ -661,10 +687,10 @@ if (( b_initDo )) ; then
     PACSPOST=$(jq 'del(.name)' <<< $PACSPOST)
     CMD=$(CURL PUT "PACSservice/$PACS/" "$PACSPOST")
     vprint "$CMD"
-    eval "$CMD" | jq
+    evaljq "$CMD"
     CMD=$(CURL POST listener/initialize/ '{"value" : "default"}')
     vprint "$CMD"
-    eval "$CMD" | jq
+    evaljq "$CMD"
 fi
 
 #
@@ -703,7 +729,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/  "$JSON")
                 vprint "$CURLcmd"
-                eval "$CURLcmd" | jq
+                evaljq "$CURLcmd"
         fi
         if (( b_pushDo )) ; then
                 JSON=$(jq '.PACSdirective += {
@@ -712,7 +738,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                eval "$CURLcmd" | jq
+                evaljq "$CURLcmd"
         fi
         if (( b_registerDo )) ; then
                 JSON=$(jq '.PACSdirective += {
@@ -721,7 +747,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                eval "$CURLcmd" | jq
+                evaljq "$CURLcmd"
         fi
     fi
 done
