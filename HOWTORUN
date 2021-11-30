@@ -23,6 +23,13 @@ docker run --rm -it                                                            \
         -v /home/dicom:/home/dicom                                             \
         local/pfdcm /start-reload.sh
 
+# Port mapping suitable for FNNDSC (same as above w/o 10402)
+docker run --rm -it                                                            \
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -v /home/dicom:/home/dicom                                             \
+        local/pfdcm /start-reload.sh
+
+
 # Run with support for source debugging
 docker run --rm -it                                                            \
         -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
@@ -79,7 +86,7 @@ ls /home/dicom/services
 
 # Note that the underlying infrastructure relies on a "poke" event to the pfdcm
 # container xinetd on port 10502 to fire off the actual listener service that
-# uses port 1113. This somewhat indirect approach was needed since the listener
+# uses port 11113. This somewhat indirect approach was needed since the listener
 # script couldn't be triggered by xinetd on the same port from which it
 # also receives DICOM transmisstions.
 pfdcm.sh -u -i --
