@@ -1,14 +1,131 @@
+export PURPOSE="
+    This script describes by way of demonstration various explicit examples of
+    how to interact with the pfdcm API using curl.
+
+    This script is considered 'low level' or a reference source of truth --
+    c.f. the pfdcm.sh script that provides a convenience CLI which internally
+    calls many of these same curl constructs.
+
+    Calls in this script can be used to connect a PACS database to a ChRIS
+    instance. By 'connect' is meant the set of actions to determine images of
+    interest in a PACS and to ultimately send those same images to a ChRIS
+    instance for subsequent image analysis.
+
+    The set of operations, broadly, are:
+
+        * query an associated PACS for information on patient STUDY and
+          SERIES data;
+        * query a PACS for images of interest and report on results in a
+          variety of ways;
+        * retrieve a set of images of interest;
+        * push the retrieved images to CUBE swift storage;
+        * register the pushed-into-swift images with CUBE;
+
+    Each set of operations is present with as CLI using 'on-the-metal' curl
+    calls.
+
+    To use this script, simply:
+
+      $ source $PWD/workflow.sh
+
+    and then call the named functions,
+
+      $ build
+      $ launch
+
+    or examine this script and copy/paste the curl CLI into your terminal
+    (bash/zsh/fish).
+
+    The list of functions are:
+
+      $ build   # build the container
+      $ launch  # launch the container (note this will run in interactive
+                # mode)
+
+    NOTE:
+        * This script should work across all shells of note: bash/zsh/fish
+          but has only fully tested on 'fish'.
+
+    Q/A LOG:
+        * 07-Jan-2022 -> 08-Jan-2022
+          Full test of each command/line against a ChRIS instance and orthanc
+          server running within a local network.
+"
+
+###############################################################################
+#_____________________________________________________________________________#
+# E N V                                                                       #
+#_____________________________________________________________________________#
+# Set the following variables appropriately for your local setup.             #
+###############################################################################
+
+# UID
+# for fish:
+export UID=(id -u)
+# for bash/zsh
+# export UID=$(id -u)
+
 #
-# PRELIMINARIES -- on the "server"
+# swift storage environment
 #
-# Build the container and then "run" it.
-# Depending on your purpose, choose either the Quick 'n dirty run
-# or, while developing, choose the run with support for source debugging.
+export SWIFTKEY=local
+export SWIFTHOST=10.0.0.230
+export SWIFTPORT=8080
+export SWIFTLOGIN=chris:chris1234
+export SWIFTSERVICEPACS=orthanc
+
 #
+# CUBE login details
+#
+export CUBEKEY=local
+export CUBEURL=http://10.0.0.230:8000/api/v1/
+export CUBEusername=chris
+export CUBEuserpasswd=chris1234
+
+#
+# PACS details
+#
+# For ex a FUJI PACS
+export AEC=CHRIS
+export AET=CHRISV3
+export PACSIP=134.174.12.21
+export PACSPORT=104
+export DB=/neuro/users/chris/PACS/log
+export PACSNAME=PFDCM
+#
+# For ex an orthanc service
+#
+export AEC=ORTHANC
+export AET=CHRISLOCAL
+export PACSIP=10.0.0.230
+export PACSPORT=4242
+export PACSNAME=orthanc
+#
+# pfdcm service
+#
+export PFDCMURL=http://localhost:4005
+
+# Patient Query detail
+export MRN=4443508
+export STUDYUID=1.2.840.113845.11.1000000001785349915.20130312110508.6351586
+export SERIESUID=1.3.12.2.1107.5.2.19.45152.2013031212563759711672676.0.0.0
+export ACCESSIONNUMBER=22681485
+
+# Directory mounts etc
+export DB=/home/dicom/log
+export DATADIR=/home/dicom/data
+export BASEMOUNT=/home/dicom
+
+###############################################################################
+#_____________________________________________________________________________#
+# B U I L D                                                                   #
+#_____________________________________________________________________________#
+# Build the container image in a variety of difference contexts/use cases.    #
+###############################################################################
 
 # Build (for fish shell syntax!)
-set UID (id -u)
-docker build --build-arg UID=$UID -t local/pfdcm .   
+export UID=(id -u)
+docker build --build-arg UID=$UID -t local/pfdcm .
 
 # Quick 'n dirty run -- this is what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
@@ -30,82 +147,23 @@ docker run --rm -it                                                            \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
 
-# Access documentation        
-URL :4005/docs
+# To access the API swagger documentation, point a brower at:
+export swaggerURL=":4005/docs"
 
+###############################################################################
+#_____________________________________________________________________________#
+# P A C S  s e t u p  a n d  S e r v i c e S t a r t                          #
+#_____________________________________________________________________________#
+###############################################################################
+# Setup the information relevant to the PACS.                                 #
+###############################################################################
 #
-# REST API Calls -- on the "client"
-#
-#
-# SETUP
-# First we setup swift and CUBE resources. These allow underlying tools
-# of the system to associate a set of login details for a resource 
-# with a keyname.
-#
- 
-# Configure a swift access key -- needed for pypx/push operations
-# When DICOM images have been "pulled" from a PACS, they first reside on the
-# pfdcm filesystem. From here, they need to be pushed to CUBE's swift storage
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/SMDB/swift/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "swiftKeyName": {
-    "value": "megalodon"
-  },
-  "swiftInfo": {
-    "ip": "192.168.1.216",
-    "port": "8080",
-    "login": "chris:chris1234"
-  }
-}' | jq
 
-# Check on the above by getting a list of swift resources...
-# In the above call we created a resource called "megalodon"
-# and should see that resource in the return of the call
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/SMDB/swift/list/' \
-  -H 'accept: application/json' | jq
 
-# Now, get the detail again on the "megalodon" resource.
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/SMDB/swift/megalodon/' \
-  -H 'accept: application/json' | jq
-  
-# Similarly, we now configure a CUBE access key -- needed for
-# pypx/register operations
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/SMDB/CUBE/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "cubeKeyName": {
-    "value": "megalodon"
-  },
-  "cubeInfo": {
-    "url": "http://192.168.1.216:8000/api/v1/",
-    "username": "chris",
-    "password": "chris1234"
-  }
-}' | jq
-
-# Get a list of CUBE services -- we should see "megalodon" in the list
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/SMDB/CUBE/list/' \
-  -H 'accept: application/json' | jq
-
-# Ask about the "megalodon" CUBE service -- this describes the information
-# needed to log into CUBE
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/SMDB/CUBE/megalodon/' \
-  -H 'accept: application/json' | jq
-
-#
 # CONFIGURE PACS RELATED SERVICES
 #
 # Here we configure two services -- a listener based off xinetd that will
-# intercept and handle data pushed from the PACS, and the actual PACS 
+# intercept and handle data pushed from the PACS, and the actual PACS
 # detail as well.
 
 # Start by firing up the local listener services... after this call pfdcm
@@ -114,124 +172,122 @@ curl -s -X 'GET' \
 # PACS service since it will transmit data to this location).
 #
 # Note this call has a slight delay...
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/listener/initialize/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/listener/initialize/"                                     \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
   -d '{
-  "value": "default"
-}' | jq
+        "value": "default"
+      }' | jq
 
 # Now let pfdcm know what PACS service it will communicate with.
 # Here, we configure an ORTHANC PACS (that in turn is suitably configured
 # to speak with pfdcm). Circular comms, oh my!
 # Oh, and obviously YMMV -- set your serverIP appropriately!
-curl -s -X 'PUT' \
-  'http://localhost:4005/api/v1/PACSservice/orthanc/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+curl -s -X 'PUT'                                                              \
+  "$PFDCMURL/api/v1/PACSservice/$PACSNAME/"                                   \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
   -d '{
-  "info": {
-    "aet": "CHRISLOCAL",
-    "aet_listener": "ORTHANC",
-    "aec": "ORTHANC",
-    "serverIP": "192.168.1.189",
-    "serverPort": "4242"
-  }
+        "info": {
+          "aet":            "'$AET'",
+          "aet_listener":   "'$AEC'",
+          "aec":            "'$AEC'",
+          "serverIP":       "'$PACSIP'",
+          "serverPort":     "'$PACSPORT'"
+        }
 }' | jq
 
 # Let's check by listing available PACS services
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/PACSservice/list/' \
+curl -s -X 'GET'                                                              \
+  "$PFDCMURL/api/v1/PACSservice/list/"                                        \
   -H 'accept: application/json' | jq
 
-# GET detail on 'orthanc'
-curl -s -X 'GET' \
-  'http://localhost:4005/api/v1/PACSservice/orthanc/' \
+# GET detail on $PACSNAME
+curl -s -X 'GET'                                                              \
+  "$PFDCMURL/api/v1/PACSservice/$PACSNAME/"                                   \
   -H 'accept: application/json' | jq
 
-#
-# NOW FOR THE GOOD STUFF!
-#
-# Perform a QUERY on say a PatientID...
-# ... and for extra kicks, if you have done a 
-#
-#               pip install pypx 
-#
-# you can pipe the output of the REST call to a report module, px-report
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+###############################################################################
+#_____________________________________________________________________________#
+# S W I F T                                                                   #
+#_____________________________________________________________________________#
+###############################################################################
+# First we setup swift and CUBE resources. These allow underlying tools       #
+# of the system to associate a set of login details for a resource            #
+# with a keyname.                                                             #
+###############################################################################
+
+# Configure a swift access key -- needed for pypx/push operations
+# When DICOM images have been "pulled" from a PACS, they first reside on the
+# pfdcm filesystem. From here, they need to be pushed to CUBE's swift storage
+# This call sets the data within a service file, `swift.json`.
+curl -s -X 'POST'                                                             \
+    "$PFDCMURL/api/v1/SMDB/swift/"                                            \
+    -H 'accept: application/json'                                             \
+    -H 'Content-Type: application/json'                                       \
+    -d '{
+    "swiftKeyName": {
+      "value": "'$SWIFTKEY'"
+    },
+    "swiftInfo": {
+      "ip":     "'$SWIFTHOST'",
+      "port":   "'$SWIFTPORT'",
+      "login":  "'$SWIFTLOGIN'"
+    }
+}' | jq
+
+# Check on the above by getting a list of swift resources...
+# In the above call we created a resource called "$SWIFTKEY"
+# and should see that resource in the return of the call
+curl -s -X 'GET' \
+  "$PFDCMURL/api/v1/SMDB/swift/list/"                                         \
+  -H 'accept: application/json' | jq
+
+# Now, get the detail again on the "$SWIFTKEY" resource.
+curl -s -X 'GET' \
+  "$PFDCMURL/api/v1/SMDB/swift/$SWIFTKEY/"                                    \
+  -H 'accept: application/json' | jq
+
+###############################################################################
+#_____________________________________________________________________________#
+# C U B E                                                                     #
+#_____________________________________________________________________________#
+###############################################################################
+# Setup the information relevant to CUBE.                                     #
+###############################################################################
+
+# Similarly, we now configure a CUBE access key -- needed for
+# pypx/register operations
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/SMDB/CUBE/"                                               \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
   -d '{
-  "PACSservice": {
-    "value": "orthanc"
+  "cubeKeyName": {
+    "value": "'$CUBEKEY'"
   },
-  "listenerService": {
-    "value": "default"
-  },
-  "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": false,
-    "then": "",
-    "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": true
+  "cubeInfo": {
+    "url": "'$CUBEURL'",
+    "username": "'$CUBEusername'",
+    "password": "'$CUBEuserpasswd'"
   }
-}'| jq '.pypx' |\
- px-report      --colorize dark \
-                --printReport csv \
-                --csvPrettify \
-                --csvPrintHeaders \
-                --reportHeaderStudyTags PatientName,PatientID,StudyDate \
-                --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+}' | jq
 
-#
-# RETRIEVE
-#
-# The model idea here needs some explanation. Basically, to keep things simple
-# _one_ way of interacting with pfdcm is to reuse the `find/search`, but just
-# give it downstream directives. So, if we want to pull all the data from the
-# above we can use the same command, just add a {"then": "retrieve"} in the 
-# payload.
-#
-# Of course, if we only want a single series, we can do the find on the
-# SeriesInstanceUID and retrieve only those results.
-#
+# Get a list of CUBE services -- we should see "$CUBEKEY" in the list
+curl -s -X 'GET' \
+  "$PFDCMURL/api/v1/SMDB/CUBE/list/"                                          \
+  -H 'accept: application/json' | jq
 
-# Retrieve only one SeriesInstanceUID -- 
-# Ugh.... at time of writing this below is still a WIP... skip ahead, please.
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "PACSservice": {
-    "value": "orthanc"
-  },
-  "listenerService": {
-    "value": "default"
-  },
-  "PACSdirective": {
+# Ask about the "$CUBEKEY" CUBE service -- this describes the information
+# needed to log into CUBE
+curl -s -X 'GET' \
+  "$PFDCMURL/api/v1/SMDB/CUBE/$CUBEKEY/"                                      \
+  -H 'accept: application/json' | jq
+
+# In the calls below, the PACS can be accessed and images "searched" using
+# any of the fields below in the PACSdirective JSON structure:
+export PACSdirectiveJSON='
     "AccessionNumber": "",
     "PatientID": "",
     "PatientName": "",
@@ -248,219 +304,175 @@ curl -s -X 'POST' \
     "InstanceNumber": "",
     "SeriesDate": "",
     "SeriesDescription": "",
-    "SeriesInstanceUID": "1.3.12.2.1107.5.2.19.45479.2021061717465158664020277.0.0.0",
+    "SeriesInstanceUID": "",
     "ProtocolName": "",
     "AcquisitionProtocolDescription": "",
     "AcquisitionProtocolName": "",
+'
+
+###############################################################################
+#_____________________________________________________________________________#
+# Q U E R Y                                                                   #
+#_____________________________________________________________________________#
+###############################################################################
+# Query the PACS for information on a PatientID                               #
+###############################################################################
+# ... and for extra kicks, if you have done a
+#
+#               pip install pypx
+#
+# you can pipe the output of the REST call to a report module, px-report
+# and get nicely formatted console reports
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/PACS/sync/pypx/"                                          \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
+  -d '{
+  "PACSservice": {
+    "value": "'$PACSNAME'"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "PatientID": "'$MRN'",
+    "withFeedBack": false,
+    "then": "",
+    "thenArgs": "",
+    "dblogbasepath": "'$DB'",
+    "json_response": true
+  }
+}'| jq '.pypx' |\
+ px-report      --colorize dark                                             \
+                --printReport csv                                           \
+                --csvPrettify                                               \
+                --csvPrintHeaders                                           \
+                --reportHeaderStudyTags PatientName,PatientID,StudyDate     \
+                --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+
+
+###############################################################################
+#_____________________________________________________________________________#
+# R E T R I E V E                                                             #
+#_____________________________________________________________________________#
+###############################################################################
+# Retrieve PatientID images from the PACS                                     #
+###############################################################################
+#
+# The model idea here needs some explanation. Basically, to keep things simple
+# _one_ way of interacting with pfdcm is to reuse the `find/search`, but just
+# give it downstream directives. So, if we want to pull all the data from the
+# above we can use the same command, just add a {"then": "retrieve"} in the
+# payload.
+#
+# Of course, if we only want a single series, we can do the find on the
+# SeriesInstanceUID and retrieve only those results.
+#
+# Retrieve only one SeriesInstanceUID --
+#
+# NB!
+#
+# o For orthanc, make SURE that the orthanc instance is configured for this
+#   listener IP address!
+#
+# o Some other PACS might need a StudyInstanceUID in addition to the
+#   SeriesInstanceUID (for e.g. a FUJI PACS).
+
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/PACS/thread/pypx/"                                        \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
+  -d '{
+  "PACSservice": {
+    "value": "'$PACSNAME'"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "SeriesInstanceUID": "'$SERIESUID'",
     "withFeedBack": true,
     "then": "retrieve",
     "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
+    "dblogbasepath": "'$DB'",
     "json_response": true
   }
 }' | jq
 
 # What the heck, let's just retrieve all the info for this ID... This def
 # works!
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+curl -s -X 'POST'                                                           \
+  "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
+  -H 'accept: application/json'                                             \
+  -H 'Content-Type: application/json'                                       \
   -d '{
   "PACSservice": {
-    "value": "orthanc"
+    "value": "'$PACSNAME'"
   },
   "listenerService": {
     "value": "default"
   },
   "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
+    "PatientID": "'$MRN'",
     "withFeedBack": false,
     "then": "retrieve",
     "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
+    "dblogbasepath": "'$DB'",
     "json_response": true
   }
 }' | jq
 
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "PACSservice": {
-    "value": "orthanc"
-  },
-  "listenerService": {
-    "value": "default"
-  },
-  "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "LILLA-9678",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": false,
-    "then": "retrieve",
-    "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": true
-  }
-}'
 
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "PACSservice": {
-    "value": "orthanc"
-  },
-  "listenerService": {
-    "value": "default"
-  },
-  "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "LILLA-9678",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": false,
-    "then": "retrieve",
-    "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": true
-  }
-}'
-
+###############################################################################
+#_____________________________________________________________________________#
+# S T A T U S                                                                 #
+#_____________________________________________________________________________#
+###############################################################################
+# Retrieve status information for images pulled from the PACS                 #
+###############################################################################
 
 # Request the STATUS
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+# ... raw JSON response!
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/PACS/sync/pypx/"                                          \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
   -d '{
   "PACSservice": {
-    "value": "orthanc"
+    "value": "'$PACSNAME'"
   },
   "listenerService": {
     "value": "default"
   },
   "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": true,
-    "then": "status",
-    "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": false
-  }
-}' | jq
-
-# Request the STATUS and report on the results
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/sync/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "PACSservice": {
-    "value": "orthanc"
-  },
-  "listenerService": {
-    "value": "default"
-  },
-  "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
+    "PatientID": "'$MRN'",
     "withFeedBack": false,
     "then": "status",
     "thenArgs": "",
-    "dblogbasepath": "/home/dicom/log",
+    "dblogbasepath": "'$DB'",
+    "json_response": true
+  }
+}' | jq
+
+# Request the STATUS
+# ... with a slightly more human friendly formatted reply
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/PACS/sync/pypx/"                                          \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
+  -d '{
+  "PACSservice": {
+    "value": "orthanc"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "PatientID": "'$MRN'",
+    "withFeedBack": false,
+    "then": "status",
+    "thenArgs": "",
+    "dblogbasepath": "'$DB'",
     "json_response": true
   }
 }' | jq '.pypx' |\
@@ -470,103 +482,106 @@ px-report       --seriesSpecial seriesStatus                                   \
                 --reportBodySeriesTags seriesStatus
 
 
+###############################################################################
+#_____________________________________________________________________________#
+# P U S H                                                                     #
+#_____________________________________________________________________________#
+###############################################################################
+# Push images that have been retrieved to the local FS to                     #
+# CUBE swift storage                                                          #
+###############################################################################
 #
-# Now, all the images will exist within the pfdcm container. If you
+# If you're following along and have executed a retrieve, the images pertinent
+# to the directive search space will exist within the pfdcm container. If you
 # ran the container with appropriate volume mapping, then files should be
-# accessible in your host. 
+# accessible in your host.
 #
-# Here, we add these files to CUBE.
+# The next step is to PUSH these local FS files to CUBE swift storage. Within
+# the swift storage, objects are named in a fashion that mimics a file system
+# directory structure:
 #
-# First, we have to push to swift...
-# remember way back... in the beginning? We setup a swift resource called
-# 'megalodon' -- well, here is where we use it.
+#                      SERVICES/PACS/$SWIFTSERVICEPACS
 #
-# Also the swiftSerivcesPACS : WIP2 is the "subdir" in the CUBE
-#
-#                      SERVICES/PACS/<swiftServicesPACS>
-#
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+
+# Push just a single series...
+curl -s -X 'POST'                                                           \
+  "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
+  -H 'accept: application/json'                                             \
+  -H 'Content-Type: application/json'                                       \
   -d '{
   "PACSservice": {
-    "value": "orthanc"
+    "value": "'$PACSNAME'"
   },
   "listenerService": {
     "value": "default"
   },
   "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": true,
+    "SeriesInstanceUID": "'$SERIESUID'",
+    "withFeedBack": false,
     "then": "push",
-    "thenArgs": "{\"db\": \"/home/dicom/log\", \"swift\": \"megalodon\", \"swiftServicesPACS\": \"WIP2\", \"swiftPackEachDICOM\":   true}",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": false
+    "thenArgs": "{\"db\": \"'$DB'\", \"swift\": \"'$SWIFTKEY'\", \"swiftServicesPACS\": \"'$SWIFTSERVICEPACS'\", \"swiftPackEachDICOM\":   true}",
+    "dblogbasepath": "'$DB'",
+    "json_response": true
   }
 }' | jq
 
-# Now, assuming all has gone well, the final step is to register the files
-# in CUBE swift storage to CUBE itself... again, see the CUBE resource
-# initialization we did in the beginning. Here is where we use it...
-curl -s -X 'POST' \
-  'http://localhost:4005/api/v1/PACS/thread/pypx/' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+
+# Push everything for a PatientID...
+curl -s -X 'POST'                                                           \
+  "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
+  -H 'accept: application/json'                                             \
+  -H 'Content-Type: application/json'                                       \
   -d '{
   "PACSservice": {
-    "value": "orthanc"
+    "value": "'$PACSNAME'"
   },
   "listenerService": {
     "value": "default"
   },
   "PACSdirective": {
-    "AccessionNumber": "",
-    "PatientID": "5644810",
-    "PatientName": "",
-    "PatientBirthDate": "",
-    "PatientAge": "",
-    "PatientSex": "",
-    "StudyDate": "",
-    "StudyDescription": "",
-    "StudyInstanceUID": "",
-    "Modality": "",
-    "ModalitiesInStudy": "",
-    "PerformedStationAETitle": "",
-    "NumberOfSeriesRelatedInstances": "",
-    "InstanceNumber": "",
-    "SeriesDate": "",
-    "SeriesDescription": "",
-    "SeriesInstanceUID": "",
-    "ProtocolName": "",
-    "AcquisitionProtocolDescription": "",
-    "AcquisitionProtocolName": "",
-    "withFeedBack": true,
-    "then": "register",
-    "thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"megalodon\", \"swiftServicesPACS\": \"WIP2\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
-    "dblogbasepath": "/home/dicom/log",
-    "json_response": false
+    "PatientID": "'$MRN'",
+    "withFeedBack": false,
+    "then": "push",
+    "thenArgs": "{\"db\": \"'$DB'\", \"swift\": \"'$SWIFTKEY'\", \"swiftServicesPACS\": \"'$SWIFTSERVICEPACS'\", \"swiftPackEachDICOM\":   true}",
+    "dblogbasepath": "'$DB'",
+    "json_response": true
   }
 }' | jq
+
+
+###############################################################################
+#_____________________________________________________________________________#
+# R E G I S T E R                                                             #
+#_____________________________________________________________________________#
+###############################################################################
+# Register images that are in swift storage to a CUBE database                #
+###############################################################################
+#
+# Now, assuming all has gone well, the final step is to register the files
+# in CUBE swift storage to CUBE itself...
+
+curl -s -X 'POST' \
+  "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "PACSservice": {
+    "value": "'$PACSNAME'"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "SeriesInstanceUID": "'$SERIESUID'",
+    "withFeedBack": false,
+    "then": "register",
+    "thenArgs": "{\"db\": \"'$DB'\", \"CUBE\": \"'$CUBEKEY'\", \"swiftServicesPACS\": \"'$SWIFTSERVICEPACS'\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
+    "dblogbasepath": "/home/dicom/log",
+    "json_response": true
+  }
+}' | jq
+
+# Remember to check on the registration progress using a STATUS call.
 
 #
 # And we're done! If all went well, the DICOM files from PACS will now be
