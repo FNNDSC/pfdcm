@@ -78,8 +78,8 @@ In this directory, find the `orthanc.json` file and make the following edits
   ```json
   // ...
   "DicomModalities": {
-  	// ...
-  	"CHRISLOCAL" : ["CHRISLOCAL", "192.168.1.189", 11113 ],
+    // ...
+    "CHRISLOCAL" : ["CHRISLOCAL", "192.168.1.189", 11113 ],
   }
   ```
 
@@ -120,10 +120,17 @@ Full API swagger is available. Once you have started `pfdcm`, simply navigate to
 
 ### Examples
 
-Using [httpie](https://httpie.org/)
+Using [httpie](https://httpie.org/), let's ask `pfdcm` about itself
+
 
 ```bash
-http :4005/api/v1/hello/ echoBack==lol
+http :4005/api/v1/about/
+```
+
+and say `hello` with some info about the system on which `pfdcm` is running:
+
+```bash
+http :4005/api/v1/hello/ echoBack=="Hello, World!"
 ```
 
 For full exemplar documented examples, see `pfdcm/workflow.sh` in this repository as well as `HOWTORUN`. Also consult the `pfdcm/pfdcm.sh` script for more details.
@@ -153,6 +160,20 @@ which will handle incoming file transmission from the PACS and store/pack the fi
 ```bash
 pfdcm.sh -u --status -- "PatientID:2233445,StudyDate:20210901"
 ```
+
+Once all the files have been retrieved, the files can be pushed to CUBE swift storage (assuming an available CUBE instance):
+
+```bash
+pfdcm.sh -u --push -- "PatientID:2233445,StudyDate:20210901"
+```
+
+after a successful push operation (check on progress using `status`), files in swift storage can be registered to the CUBE internal database with
+
+```bash
+pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
+```
+
+Note that the `-u` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
 
 Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info. This page (and wiki) will be updated.
 
