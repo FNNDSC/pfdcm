@@ -13,7 +13,7 @@ from    routes.listenerRouter   import router   as listener_router
 from    routes.pacsSetupRouter  import router   as pacsSetup_router
 from    routes.pacsQRrouter     import router   as pacsQR_router
 from    routes.smdbSetupRouter  import router   as smdbSetup_router
-from    routes.foobarRouter     import router   as foobar_router
+# from    routes.foobarRouter     import router   as foobar_router
 from    os                      import path
 
 import  pfstate
@@ -99,8 +99,8 @@ hello_router = helloRouter_create(
 app.include_router( hello_router,
                     prefix  = '/api/v1')
 
-# app.include_router( dicom_router,
-#                     prefix  = '/api/v1')
+app.include_router( dicom_router,
+                    prefix  = '/api/v1')
 
 app.include_router( listener_router,
                     prefix  = '/api/v1')
