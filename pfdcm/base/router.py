@@ -11,6 +11,20 @@ str_description = """
     will return some miscellaneous about the system on which
     the service is running, as well as some miscellaneous
     "about" type information.
+
+    NB!
+    For reasons that were not fully debugged nor deemed necessary
+    to spend inordinate amount of time debugging, certain fields in the
+    read_hello() route seemed to cause swagger errors.
+
+    Specifically the version() and loadavg() calls were noted to
+    either result in strange compile errors or by fact of their
+    inclusion resulted in swagger errors.
+
+    In the interest of restoring doc swagger these problematic
+    fields have been noted in code comments for possible later
+    debugging.
+
 """
 
 
@@ -27,6 +41,8 @@ import multiprocessing
 import os
 import socket
 
+class ValueStr(BaseModel):
+    value:              str         = ""
 
 def helloRouter_create(
         name:       str,
@@ -92,10 +108,16 @@ def helloRouter_create(
                 title       = 'uname output',
                 description = 'Uname output, converted from object to list')
 
+        platform:       str =                                               \
+        Field(  platform.platform(),
+                title       = 'Kernel name')
+
+        # NB: Not working?
         version:        str =                                               \
-        Field(  platform.version(),
+        Field(  ...,
                 title       = 'Platform version')
 
+        # NB: Not working?
         memory:         List =                                              \
         Field(  ...,
                 title       = 'Details about virtual memory',
@@ -105,7 +127,8 @@ def helloRouter_create(
         Field(  multiprocessing.cpu_count(),
                 title       = 'Number of CPU cores')
 
-        loadavg:        Tuple[float, float, float] =                        \
+        # NB: Not working?
+        loadavg: tuple      =                                               \
         Field(  ...,
                 title       = 'System load',
                 description = 'Average system load over last 1, 5, and 15 minutes')
@@ -122,9 +145,6 @@ def helloRouter_create(
         Field(  socket.gethostbyname(socket.gethostname()),
                 title       = 'Local IP address')
 
-        platform:       str =                                               \
-        Field(  platform.platform(),
-                title       = 'Kernel name')
 
     # TypedDict not supported yet in Python 3.8
     # https://pydantic-docs.helpmanual.io/usage/types/#typeddict
@@ -145,7 +165,8 @@ def helloRouter_create(
             uname       = ['Linux'],
             memory      = [],
             cpu_percent = 0.0,
-            loadavg     = (0.0, 0.0, 0.0)
+            loadavg     = (0.0, 0.0, 0.0),
+            version     = ""
         )
         echoBack:   Optional[EchoModel]
 
@@ -183,8 +204,8 @@ def helloRouter_create(
         }
         d_ret['sysinfo']['system']      = platform.system()
         d_ret['sysinfo']['machine']     = platform.machine()
-        d_ret['sysinfo']['platform']    = platform.platform()
         d_ret['sysinfo']['uname']       = platform.uname()
+        d_ret['sysinfo']['platform']    = platform.platform()
         d_ret['sysinfo']['version']     = platform.version()
         d_ret['sysinfo']['memory']      = psutil.virtual_memory()
         d_ret['sysinfo']['cpucount']    = multiprocessing.cpu_count()
