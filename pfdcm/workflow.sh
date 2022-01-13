@@ -26,25 +26,33 @@ export PURPOSE="
 
     To use this script, simply:
 
-      $ source $PWD/workflow.sh
+      $ source \$PWD/workflow.sh
 
-    and then call the named functions,
+    MAKE SURE ANY ENV VARIABLES SET BY THIS ARE WHAT YOU WANT!!
+
+    and then call the named functions, for example
 
       $ build
-      $ launch
+      $ launch_debug
+      $ listen
+      $ PACSservice_put
+      $ PACSservice_detail
+      $ query
+      $ retrieve
+      $ status_console
+      $ push
+      $ register
 
     or examine this script and copy/paste the curl CLI into your terminal
     (bash/zsh/fish).
 
     The list of functions are:
 
-      $ build   # build the container
-      $ launch  # launch the container (note this will run in interactive
-                # mode)
 
     NOTE:
-        * This script should work across all shells of note: bash/zsh/fish
-          but has only fully tested on 'fish'.
+        * This script should work across bash-type shells i.e. bash/zsh
+          however, individual curl commands can be copy/pasted into a
+          fish shell.
 
     Q/A LOG:
         * 07-Jan-2022 -> 08-Jan-2022
@@ -58,12 +66,6 @@ export PURPOSE="
 #_____________________________________________________________________________#
 # Set the following variables appropriately for your local setup.             #
 ###############################################################################
-
-# UID
-# for fish:
-export UID=(id -u)
-# for bash/zsh
-# export UID=$(id -u)
 
 #
 # swift storage environment
@@ -90,7 +92,6 @@ export AEC=CHRIS
 export AET=CHRISV3
 export PACSIP=134.174.12.21
 export PACSPORT=104
-export DB=/neuro/users/chris/PACS/log
 export PACSNAME=PACSDCM
 #
 # For ex an orthanc service
@@ -103,6 +104,7 @@ export PACSNAME=orthanc
 #
 # pfdcm service
 #
+# In some envs, this MUST be an IP address!
 export PFDCMURL=http://localhost:4005
 
 # Patient Query detail
@@ -123,29 +125,41 @@ export BASEMOUNT=/home/dicom
 # Build the container image in a variety of difference contexts/use cases.    #
 ###############################################################################
 
+build () {
+# UID
+# for fish:
+# export UID=(id -u)
+# for bash/zsh
+export UID=$(id -u)
 # Build (for fish shell syntax!)
-export UID=(id -u)
 docker build --build-arg UID=$UID -t local/pfdcm .
+}
 
+launch_quickndirty () {
 # Quick 'n dirty run -- this is what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:11113 -p 11113:11113                             \
         local/pfdcm /start-reload.sh
+}
 
+launch_qndwithdb () {
 # Quick 'n dirty run -- with volume mapping.
 # Obviously change port mappings if needed (and in the Dockerfile)
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:11113 -p 11113:11113                             \
         -v /home/dicom:/home/dicom                                             \
         local/pfdcm /start-reload.sh
+}
 
+launch_debug () {
 # Run with support for source debugging
 docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
+        -p 4005:4005 -p 10402:11113 -p 11113:11113                             \
         -v /home/dicom:/home/dicom                                             \
         -v $PWD/pfdcm:/app:ro                                                  \
         local/pfdcm /start-reload.sh
+}
 
 # To access the API swagger documentation, point a brower at:
 export swaggerURL=":4005/docs"
@@ -158,8 +172,6 @@ export swaggerURL=":4005/docs"
 # Setup the information relevant to the PACS.                                 #
 ###############################################################################
 #
-
-
 # CONFIGURE PACS RELATED SERVICES
 #
 # Here we configure two services -- a listener based off xinetd that will
@@ -171,6 +183,8 @@ export swaggerURL=":4005/docs"
 # the Dockerfile and port mapped -- obviously this port must be known to the
 # PACS service since it will transmit data to this location).
 #
+
+listen () {
 # Note this call has a slight delay...
 curl -s -X 'POST'                                                             \
   "$PFDCMURL/api/v1/listener/initialize/"                                     \
@@ -179,7 +193,9 @@ curl -s -X 'POST'                                                             \
   -d '{
         "value": "default"
       }' | jq
+}
 
+PACSservice_put () {
 # Now let pfdcm know what PACS service it will communicate with.
 # Here, we configure an ORTHANC PACS (that in turn is suitably configured
 # to speak with pfdcm). Circular comms, oh my!
@@ -197,16 +213,21 @@ curl -s -X 'PUT'                                                              \
           "serverPort":     "'$PACSPORT'"
         }
 }' | jq
+}
 
+PACSservice_list () {
 # Let's check by listing available PACS services
 curl -s -X 'GET'                                                              \
   "$PFDCMURL/api/v1/PACSservice/list/"                                        \
   -H 'accept: application/json' | jq
+}
 
+PACSservice_detail () {
 # GET detail on $PACSNAME
 curl -s -X 'GET'                                                              \
   "$PFDCMURL/api/v1/PACSservice/$PACSNAME/"                                   \
   -H 'accept: application/json' | jq
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -218,6 +239,7 @@ curl -s -X 'GET'                                                              \
 # with a keyname.                                                             #
 ###############################################################################
 
+swift_post () {
 # Configure a swift access key -- needed for pypx/push operations
 # When DICOM images have been "pulled" from a PACS, they first reside on the
 # pfdcm filesystem. From here, they need to be pushed to CUBE's swift storage
@@ -236,18 +258,23 @@ curl -s -X 'POST'                                                             \
       "login":  "'$SWIFTLOGIN'"
     }
 }' | jq
+}
 
+swift_list () {
 # Check on the above by getting a list of swift resources...
 # In the above call we created a resource called "$SWIFTKEY"
 # and should see that resource in the return of the call
 curl -s -X 'GET' \
   "$PFDCMURL/api/v1/SMDB/swift/list/"                                         \
   -H 'accept: application/json' | jq
+}
 
+swift_detail () {
 # Now, get the detail again on the "$SWIFTKEY" resource.
 curl -s -X 'GET' \
   "$PFDCMURL/api/v1/SMDB/swift/$SWIFTKEY/"                                    \
   -H 'accept: application/json' | jq
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -257,6 +284,7 @@ curl -s -X 'GET' \
 # Setup the information relevant to CUBE.                                     #
 ###############################################################################
 
+cube_post () {
 # Similarly, we now configure a CUBE access key -- needed for
 # pypx/register operations
 curl -s -X 'POST'                                                             \
@@ -273,17 +301,22 @@ curl -s -X 'POST'                                                             \
     "password": "'$CUBEuserpasswd'"
   }
 }' | jq
+}
 
+cube_list () {
 # Get a list of CUBE services -- we should see "$CUBEKEY" in the list
 curl -s -X 'GET' \
   "$PFDCMURL/api/v1/SMDB/CUBE/list/"                                          \
   -H 'accept: application/json' | jq
+}
 
+cube_detail () {
 # Ask about the "$CUBEKEY" CUBE service -- this describes the information
 # needed to log into CUBE
 curl -s -X 'GET' \
   "$PFDCMURL/api/v1/SMDB/CUBE/$CUBEKEY/"                                      \
   -H 'accept: application/json' | jq
+}
 
 # In the calls below, the PACS can be accessed and images "searched" using
 # any of the fields below in the PACSdirective JSON structure:
@@ -323,6 +356,7 @@ export PACSdirectiveJSON='
 #
 # you can pipe the output of the REST call to a report module, px-report
 # and get nicely formatted console reports
+query () {
 curl -s -X 'POST'                                                             \
   "$PFDCMURL/api/v1/PACS/sync/pypx/"                                          \
   -H 'accept: application/json'                                               \
@@ -349,6 +383,42 @@ curl -s -X 'POST'                                                             \
                 --csvPrintHeaders                                           \
                 --reportHeaderStudyTags PatientName,PatientID,StudyDate     \
                 --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+}
+
+# If you have a specific SeriesInstanceUID and StudyInstanceUID, you can
+export STUDYINSTANCEUID=1.2.840.113845.11.1000000001785349915.20160826183157.8128736
+export SERIESINSTANCEUID=1.3.12.2.1107.5.2.19.45152.2013031212563759711672676.0.0.0
+
+query_single () {
+curl -s -X 'POST'                                                             \
+  "$PFDCMURL/api/v1/PACS/sync/pypx/"                                          \
+  -H 'accept: application/json'                                               \
+  -H 'Content-Type: application/json'                                         \
+  -d '{
+  "PACSservice": {
+    "value": "'$PACSNAME'"
+  },
+  "listenerService": {
+    "value": "default"
+  },
+  "PACSdirective": {
+    "PatientID": "'$MRN'",
+    "StudyInstanceUID": "'$STUDYINSTANCEUID'",
+    "SeriesInstanceUID": "'$SERIESINSTANCEUID'",
+    "withFeedBack": false,
+    "then": "",
+    "thenArgs": "",
+    "dblogbasepath": "'$DB'",
+    "json_response": true
+  }
+}'| jq '.pypx' |\
+ px-report      --colorize dark                                             \
+                --printReport csv                                           \
+                --csvPrettify                                               \
+                --csvPrintHeaders                                           \
+                --reportHeaderStudyTags PatientName,PatientID,StudyDate     \
+                --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -377,6 +447,7 @@ curl -s -X 'POST'                                                             \
 # o Some other PACS might need a StudyInstanceUID in addition to the
 #   SeriesInstanceUID (for e.g. a FUJI PACS).
 
+retrieve_single () {
 curl -s -X 'POST'                                                             \
   "$PFDCMURL/api/v1/PACS/thread/pypx/"                                        \
   -H 'accept: application/json'                                               \
@@ -397,7 +468,9 @@ curl -s -X 'POST'                                                             \
     "json_response": true
   }
 }' | jq
+}
 
+retrieve () {
 # What the heck, let's just retrieve all the info for this ID... This def
 # works!
 curl -s -X 'POST'                                                           \
@@ -420,7 +493,7 @@ curl -s -X 'POST'                                                           \
     "json_response": true
   }
 }' | jq
-
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -430,6 +503,7 @@ curl -s -X 'POST'                                                           \
 # Retrieve status information for images pulled from the PACS                 #
 ###############################################################################
 
+satus_raw () {
 # Request the STATUS
 # ... raw JSON response!
 curl -s -X 'POST'                                                             \
@@ -452,7 +526,9 @@ curl -s -X 'POST'                                                             \
     "json_response": true
   }
 }' | jq
+}
 
+status_console () {
 # Request the STATUS
 # ... with a slightly more human friendly formatted reply
 curl -s -X 'POST'                                                             \
@@ -461,7 +537,7 @@ curl -s -X 'POST'                                                             \
   -H 'Content-Type: application/json'                                         \
   -d '{
   "PACSservice": {
-    "value": "orthanc"
+    "value": "'$PACSNAME'"
   },
   "listenerService": {
     "value": "default"
@@ -479,7 +555,7 @@ px-report       --seriesSpecial seriesStatus                                   \
                 --printReport tabular                                          \
                 --colorize dark                                                \
                 --reportBodySeriesTags seriesStatus
-
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -502,6 +578,7 @@ px-report       --seriesSpecial seriesStatus                                   \
 #                      SERVICES/PACS/$SWIFTSERVICEPACS
 #
 
+push_single () {
 # Push just a single series...
 curl -s -X 'POST'                                                           \
   "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
@@ -523,8 +600,9 @@ curl -s -X 'POST'                                                           \
     "json_response": true
   }
 }' | jq
+}
 
-
+push () {
 # Push everything for a PatientID...
 curl -s -X 'POST'                                                           \
   "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
@@ -546,7 +624,7 @@ curl -s -X 'POST'                                                           \
     "json_response": true
   }
 }' | jq
-
+}
 
 ###############################################################################
 #_____________________________________________________________________________#
@@ -559,6 +637,7 @@ curl -s -X 'POST'                                                           \
 # Now, assuming all has gone well, the final step is to register the files
 # in CUBE swift storage to CUBE itself...
 
+register () {
 curl -s -X 'POST' \
   "$PFDCMURL/api/v1/PACS/thread/pypx/"                                      \
   -H 'accept: application/json' \
@@ -579,6 +658,7 @@ curl -s -X 'POST' \
     "json_response": true
   }
 }' | jq
+}
 
 # Remember to check on the registration progress using a STATUS call.
 
@@ -588,4 +668,3 @@ curl -s -X 'POST' \
 #
 # _-30-_
 #
-
