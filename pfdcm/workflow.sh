@@ -91,7 +91,7 @@ export AET=CHRISV3
 export PACSIP=134.174.12.21
 export PACSPORT=104
 export DB=/neuro/users/chris/PACS/log
-export PACSNAME=PFDCM
+export PACSNAME=PACSDCM
 #
 # For ex an orthanc service
 #
@@ -349,7 +349,6 @@ curl -s -X 'POST'                                                             \
                 --csvPrintHeaders                                           \
                 --reportHeaderStudyTags PatientName,PatientID,StudyDate     \
                 --reportBodySeriesTags SeriesDescription,SeriesInstanceUID
-
 
 ###############################################################################
 #_____________________________________________________________________________#
