@@ -692,7 +692,6 @@ if (( b_initDo )) ; then
     vprint "$CMD"
     evaljq "$CMD"
 fi
-
 #
 # The core engine. Loop over the expression list and call the desired
 # pfdcm directive.
@@ -701,6 +700,8 @@ PAYLOAD=$(preamble)
 for EXPR in ${listEXPR//;/ } ; do
     if (( ${#EXPR} )) ; then
         sub=""
+        INVALID=0
+        VALID=1
         for PAIR in ${EXPR//,/ } ; do
             if (( ! ${#DICOMKEY} )) ; then
                 eval $(echo $PAIR | awk -F\: '{printf("sub=\"$sub -s %s=%s\" ", $1, $2)}')
@@ -708,7 +709,30 @@ for EXPR in ${listEXPR//;/ } ; do
                 eval $(echo $PAIR | awk '{printf("sub=\"$sub -s '$DICOMKEY'=%s\" ", $1)}')
             fi
         done
-        BODY=$(eval jo -p -- "$sub" "dblogbasepath=/home/dicom/log json_response=true")
+        BODY=$(eval jo -p -- "$sub" "dblogbasepath=/home/dicom/log json_response=true" 2>/dev/null)
+        if grep -q ":" <<< "$PAIR"; then VALID=1 ; else INVALID=1 ; fi
+        if grep -q "=" <<< "$PAIR"; then INVALID=1 ; fi
+
+        if [[ $? != "0" || $INVALID == "1" ]] ; then
+            echo "Some error seems to have occurred in processing the query parameter."
+            echo "Please verify it is of form <DIICOMTag>:<Value>, for example:"
+            echo ""
+            echo -e "\t\t\"PatientID:1234566\""
+            echo ""
+            echo "and not"
+            echo ""
+            echo -e "\t\t\"--PatientID:1234566\""
+            echo -e "\tthis is WRONG! Don't say \"--PatientID\"!".
+            echo ""
+            echo "nor"
+            echo ""
+            echo -e "\t\t\"PatientID 1234566\""
+            echo -e "    this is WRONG! Use a colon : not a [space]!".
+            echo -e " (in fact don't use spaces at all in the expression)".
+            echo ""
+            echo "Exiting to system with code 1."
+            exit 1
+        fi
         JSON=$(jq '. += {"PACSdirective" : '"$BODY"'}' <<< $(preamble))
         if (( b_queryDo )) ; then
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
