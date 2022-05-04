@@ -1,26 +1,26 @@
 #
 # PRELIMINARIES -- on the "server"
 #
-# Build the container and then "run" it.
-# Depending on your purpose, choose either the Quick 'n dirty run
-# or, while developing, choose the run with support for source debugging.
+# Build the container and then "run --name pfdcm " it.
+# Depending on your purpose, choose either the Quick 'n dirty run --name pfdcm 
+# or, while developing, choose the run --name pfdcm  with support for source debugging.
 #
 
 # Build (for fish shell syntax!)
 set UID (id -u)
 docker build --build-arg UID=$UID -t local/pfdcm .
 
-# Quick 'n dirty run -- this is what you'll mostly do.
+# Quick 'n dirty run --name pfdcm  -- this is what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
+docker run --name pfdcm  --rm -it      						\
+        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
         local/pfdcm /start-reload.sh
 
-# Quick 'n dirty run -- with volume mapping.
+# Quick 'n dirty run --name pfdcm  -- with volume mapping.
 # Obviously change port mappings if needed (and in the Dockerfile)
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
-        -v /home/dicom:/home/dicom                                             \
+docker run --name pfdcm  --rm -it -d                                            \
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
+        -v /home/dicom:/home/dicom                                             	\
         local/pfdcm /start-reload.sh
 
 # Port mapping suitable for FNNDSC
@@ -28,20 +28,20 @@ docker run --rm -it                                                            \
 #  been created to connect port 10402 to port 11113. This was a historical
 #  oddity and it really makes little sense to do an ssh tunnel join when
 #  a docker portmap would suffice).
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
-        -v /home/dicom:/home/dicom                                             \
+docker run --name pfdcm  --rm -it -d                                            \
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                	\
+        -v /home/dicom:/home/dicom                                             	\
         local/pfdcm /start-reload.sh
 
 # Run with support for source debugging
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 \
-        -v /home/dicom:/home/dicom                                             \
-        -v $PWD/pfdcm:/app:ro                                                  \
+docker run --name pfdcm  --rm -it                                              	\
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
+        -v /home/dicom:/home/dicom                                             	\
+        -v $PWD/pfdcm:/app:ro                                                  	\
         local/pfdcm /start-reload.sh
 
 #
-# Once the container is up and running, the services within the container
+# Once the container is up and run --name pfdcm ning, the services within the container
 # need to be activted.
 #
 # Note that the internal port that receives DICOM file PUSH is port

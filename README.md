@@ -1,10 +1,24 @@
 # pfdcm
 
-An Open-source REST API to communicate with any number of PACS instances concurrently
+An Open-source REST API to communicate with any number of medical image databases (PACS) instances concurrently.
 
 ## Abstract
 
-`pfdcm` provides a REST-API aware service that acts as an intermediary between a client and a Radiology Medical Image Picture Archiving and Communication System (PACS). PACS is a largely pre-21st century attempt at digitizing medical imaging and uses paradigms and approaches that seem outdated by today's networking standards. While various PACS vendors have tried in some shape or form to adapt to newer approaches, there exists no standard PACS API-REST interface, leading to a large space of vendor specific and often non-opensource interfaces.
+`pfdcm` provides a REST-API aware service that acts as an intermediary between a client and a Radiology Medical Image Picture Archiving and Communication System (PACS). The deployment mechanism is via a docker container built off this source repository (and also available [here](https://hub.docker.com/r/fnndsc/pfdcm)). Once (configured and) initialized, `pfdcm` can simplify the pulling of image data from a PACS to the local filesystem. In the case where `pfdcm` is deployed as part of a [ChRIS](https://github.com/FNNDSC/ChRIS_ultron_backEnd) system, the [ChRIS UI](https://github.com/FNNDSC/ChRIS_ui) will use `pfdcm` to retrieve, push, and register images to a ChRIS instance.
+
+Typical clients can range from CLI `curl` calls, to shell scripts, to javascript interfaces. This repository provides one such shell-based client `pfdcm.sh` as reference and working exemplar.
+
+## TL;DR
+
+### Configure
+
+If this is the very first time you are trying to deploy `pfdcm`, you need to configure a `defaults.json` file.
+
+### Run
+
+## Introduction
+
+PACS is a largely pre-21st century attempt at digitizing medical imaging and uses paradigms and approaches that seem outdated by today's networking standards. While various PACS vendors have tried in some shape or form to adapt to newer approaches, there exists no standard PACS API-REST interface, leading to a large space of vendor specific and often non-opensource interfaces.
 
 `pfdcm` is a completely opensource REST-API-to-PACS system. It is designed to provide a single entry point from which to access various PACS systems. Since `pfdcm` uses raw/native PACS type tools, it is compatible with the vast majority of existing PACS systems and frees an end client from mastering the complex and arcane communications dance that typically defines a PACS interaction.
 

@@ -78,7 +78,7 @@ class jobber:
                 str_cli += '--%s %s ' % (k, v)
         return str_cli
 
-    def job_run(self, str_cmd):
+    def job_run(self, str_cmd: str):
         """
         Running some CLI process via python is cumbersome. The typical/easy
         path of
@@ -159,7 +159,7 @@ class jobber:
         #     print('\nstderr: \n%s' % d_ret['stderr'])
         return d_ret
 
-    def job_stdwrite(self, d_job, str_outputDir, str_prefix = ""):
+    def job_stdwrite(self, d_job : dict, str_outputDir : str, str_prefix : str = "") -> dict:
         """
         Capture the d_job entries to respective files.
         """
