@@ -64,6 +64,7 @@ ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
 
     pfdcm.sh    --saveToJSON defaults.json                                     \
                 --URL http://titan.tch.harvard.edu:4005                        \
+                --serviceRoot /home/dicom                                      \
                 --swiftKeyName titan                                           \
                     --swiftIP 10.26.67.203                                     \
                     --swiftPort 8080                                           \
@@ -75,10 +76,10 @@ ssh -g -f -N -X -L 10402:titan.tch.harvard.edu:11113 \
                     --serverIP 134.174.12.21                                   \
                     --serverPort 104                                           \
                 --cubeKeyName titan                                            \
-                    --cubeURL http://10.26.67.203:8000/api/vi/                 \
+                    --cubeURL http://10.26.67.203:8000/api/v1/                 \
                     --cubeUserName chris                                       \
                     --cubePACSservice PACSDCM                                  \
-                    --cubeUserPassword chris:chris1234 --
+                    --cubeUserPassword chris1234 --
 
 # Then, create persistent swift and CUBE data in the container
 pfdcm.sh -u --swiftSetupDo --

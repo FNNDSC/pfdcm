@@ -29,6 +29,7 @@ SYNOPSIS='
                         # typically by an admin
                         # YOU WILL PROBABLY NEVER USE THESE!!
                         #
+                        [--serviceRoot <rootDirForServiceFiles>]                \
                         [-U|--URL] <pfdcmURL>                                   \
                         [-i] [--initServices]                                   \
                         # Define swift access
@@ -104,7 +105,7 @@ SYNOPSIS='
 
         if, for example, the following is passed:
 
-                "-K PatientID 1234567;4322547;5432645"
+                "-K PatientID -- 1234567;4322547;5432645"
 
         then the <dicomKey> is repeatedly applied to each of the group
         arguments. This is a shorthand alternative to
@@ -116,9 +117,16 @@ SYNOPSIS='
 
         SIDE EFFECT! To see *all* the data in a PACS, do
 
-                            -K "" "all"
+                            -K ":"  -- "all"
 
-        THIS IS NOT RECOMMENDED IN PRODUCTION ENVIRONMENTS :-)T
+        or, alternatively, without the "-K"
+
+                            -- ":all"
+
+        THIS IS NOT RECOMMENDED IN PRODUCTION ENVIRONMENTS :-)
+
+        [--serviceRoot <rootDirForServiceFiles>]
+        The root directory of the service files. Default: /home/dicom
 
         [-U|--URL] <pfdcmURL>
         The URL of the pfdcm service. Typically "http://localhost:4005"
@@ -200,7 +208,7 @@ SYNOPSIS='
     * Setup and save
     pfdcm.sh    --saveToJSON defaults.json                                     \
                 --URL http://localhost:4005                                    \
-                --swiftKeyName megalodon                                       \
+                --swiftKeyName local                                           \
                     --swiftIP 192.168.1.216                                    \
                     --swiftPort 8080                                           \
                     --swiftLogin chris:chris1234                               \
@@ -210,7 +218,7 @@ SYNOPSIS='
                     --aec ORTHANC                                              \
                     --serverIP 192.168.1.189                                   \
                     --serverPort 4242                                          \
-                --cubeKeyName megalodon                                        \
+                --cubeKeyName local                                            \
                     --cubeURL http://192.168.1.216:8000/api/v1/                \
                     --cubeUserName chris                                       \
                     --cubePACSservice newPACS                                  \
@@ -270,16 +278,6 @@ SYNOPSIS='
     pfdcm.sh -u --register -K PatientID -- "LILLA-9729;LILLA-9730;LILLA-9731"
 
 '
-# PRECONDITIONS
-# o A pull on the current `pfdcm`
-# o Building the docker image, and executing with
-EXECpfdm="
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
-        -v /home/dicom:/home/dicom                                             \
-        -v $PWD/pfdcm:/app:ro                                                  \
-        local/pfdcm /start-reload.sh
-"
 
 declare -i b_initDo=0
 declare -i b_queryDo=0
@@ -330,6 +328,21 @@ AEC=""
 PACSSERVERIP=""
 PACSSERVERPORT=""
 
+DBROOT=/home/dicom
+
+declare -i b_showSearch=0
+
+# PRECONDITIONS
+# o A pull on the current `pfdcm`
+# o Building the docker image, and executing with
+EXECpfdm="
+docker run --rm -it -d --name pfdcm                                 \
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113     \
+        -v $DBROOT:$DBROOT                                          \
+        -v $PWD/pfdcm:/app:ro                                       \
+        local/pfdcm /start-reload.sh
+"
+
 while :; do
     case $1 in
         -h|-\?|-x|--help)
@@ -339,13 +352,14 @@ while :; do
         -i|--initServices)      b_initDo=1                  ;;
         -u|-d|--useDefaults)    b_useDefaults=1
                                 b_initFromJSON=1            ;;
+        -Q)                     b_showSearch=1              ;;
         -q|--query)             b_queryDo=1                 ;;
         -r|--retrieve)          b_retrieveDo=1              ;;
         -p|--push)              b_pushDo=1                  ;;
         -g|--register)          b_registerDo=1              ;;
         -s|--status)            b_statusDo=1                ;;
         -j|--json)              b_JSONreport=1              ;;
-        -K|--key)               DICOMKEY=$2                 ;;
+        -K|--mulitkey)          DICOMKEY=$2                 ;;
         -L|--listener)          LISTENER=$2                 ;;
         --listenerSetupGet)     LISTENER=$2
                                 b_listenerSetupGet=1        ;;
@@ -359,6 +373,7 @@ while :; do
                                 JSONFILE=$2                 ;;
         -I|--profile)           b_initFromJSON=1
                                 JSONFILE=$2                 ;;
+        --serviceRoot)          DBROOT=$2                   ;;
         --swiftSetupDo)         b_setupSwiftDo=1            ;;
         --swiftSetupGet)        b_setupSwiftGet=1
                                 SWIFTKEYNAME=$2             ;;
@@ -541,7 +556,7 @@ function setupSwiftDo {
         echo "$JSONSWIFT"
     else
         CMD=$(CURL POST SMDB/swift/ "$JSON")
-        evaljq "$CMD" 
+        evaljq "$CMD"
     fi
 }
 if (( b_setupSwiftDo )) ; then
@@ -703,40 +718,41 @@ for EXPR in ${listEXPR//;/ } ; do
         INVALID=0
         VALID=1
         for PAIR in ${EXPR//,/ } ; do
-            if (( ! ${#DICOMKEY} )) ; then
-                eval $(echo $PAIR | awk -F\: '{printf("sub=\"$sub -s %s=%s\" ", $1, $2)}')
-            else
-                eval $(echo $PAIR | awk '{printf("sub=\"$sub -s '$DICOMKEY'=%s\" ", $1)}')
+            if (( ${#DICOMKEY} )) ; then
+                PAIR="$DICOMKEY:$PAIR"
             fi
+            eval $(echo $PAIR | awk -F\: '{printf("sub=\"$sub -s %s=%s\" ", $1, $2)}')
         done
-        BODY=$(eval jo -p -- "$sub" "dblogbasepath=/home/dicom/log json_response=true" 2>/dev/null)
+        BODY=$(eval jo -p -- "$sub" "dblogbasepath=$DBROOT/log json_response=true" 2>/dev/null)
         if grep -q ":" <<< "$PAIR"; then VALID=1 ; else INVALID=1 ; fi
         if grep -q "=" <<< "$PAIR"; then INVALID=1 ; fi
-
-        if [[ $? != "0" || $INVALID == "1" ]] ; then
-            echo "Some error seems to have occurred in processing the query parameter."
-            echo "Please verify it is of form <DIICOMTag>:<Value>, for example:"
-            echo ""
-            echo -e "\t\t\"PatientID:1234566\""
-            echo ""
-            echo "and not"
-            echo ""
-            echo -e "\t\t\"--PatientID:1234566\""
-            echo -e "\tthis is WRONG! Don't say \"--PatientID\"!".
-            echo ""
-            echo "nor"
-            echo ""
-            echo -e "\t\t\"PatientID 1234566\""
-            echo -e "    this is WRONG! Use a colon : not a [space]!".
-            echo -e " (in fact don't use spaces at all in the expression)".
-            echo ""
-            echo "Exiting to system with code 1."
-            exit 1
+        if [[ "$PAIR" != "*all" ]] ; then
+            if [[ $? != "0" || $INVALID == "1" ]] ; then
+                echo "Some error seems to have occurred in processing the query parameter."
+                echo "Please verify it is of form <DIICOMTag>:<Value>, for example:"
+                echo ""
+                echo -e "\t\t\"PatientID:1234566\""
+                echo ""
+                echo "and not"
+                echo ""
+                echo -e "\t\t\"--PatientID:1234566\""
+                echo -e "\tthis is WRONG! Don't say \"--PatientID\"!".
+                echo ""
+                echo "nor"
+                echo ""
+                echo -e "\t\t\"PatientID 1234566\""
+                echo -e "    this is WRONG! Use a colon : not a [space]!".
+                echo -e " (in fact don't use spaces at all in the expression)".
+                echo ""
+                echo "Exiting to system with code 1."
+                exit 1
+            fi
         fi
         JSON=$(jq '. += {"PACSdirective" : '"$BODY"'}' <<< $(preamble))
         if (( b_queryDo )) ; then
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
                 vprint "$CURLcmd"
+                if (( b_showSearch )) ; then echo "$PAIR" ; fi
                 eval "$CURLcmd" | jq '.pypx' | $(reportify)
         fi
         if (( b_statusDo )) ; then
@@ -745,6 +761,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
                 vprint "$CURLcmd"
+                if (( b_showSearch )) ; then echo "$PAIR" ; fi
                 eval "$CURLcmd" | jq '.pypx' | $(reportify seriesStatus)
         fi
         if (( b_retrieveDo )) ; then
@@ -753,24 +770,27 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/  "$JSON")
                 vprint "$CURLcmd"
+                if (( b_showSearch )) ; then echo "$PAIR" ; fi
                 evaljq "$CURLcmd"
         fi
         if (( b_pushDo )) ; then
                 JSON=$(jq '.PACSdirective += {
                     "then": "push",
-                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"swift\": \"'$SWIFTKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"swiftPackEachDICOM\":   true}",
+                    "thenArgs": "{\"db\": \"'$DBROOT'/log\", \"swift\": \"'$SWIFTKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"swiftPackEachDICOM\":   true}",
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
+                if (( b_showSearch )) ; then echo "$PAIR" ; fi
                 evaljq "$CURLcmd"
         fi
         if (( b_registerDo )) ; then
                 JSON=$(jq '.PACSdirective += {
                     "then": "register",
-                    "thenArgs": "{\"db\": \"/home/dicom/log\", \"CUBE\": \"'$CUBEKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
+                    "thenArgs": "{\"db\": \"'$DBROOT'/log\", \"CUBE\": \"'$CUBEKEYNAME'\", \"swiftServicesPACS\": \"'$PACS'\", \"parseAllFilesWithSubStr\":   \"dcm\"}",
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
+                if (( b_showSearch )) ; then echo "$PAIR" ; fi
                 evaljq "$CURLcmd"
         fi
     fi

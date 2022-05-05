@@ -1,22 +1,89 @@
-# pfdcm
+# `pfdcm`
 
-An Open-source REST API to communicate with any number of medical image databases (PACS) instances concurrently.
+*an Open-source service providing a REST API to communicate with any number of medical image databases (PACS) instances concurrently*
 
 ## Abstract
 
-`pfdcm` provides a REST-API aware service that acts as an intermediary between a client and a Radiology Medical Image Picture Archiving and Communication System (PACS). The deployment mechanism is via a docker container built off this source repository (and also available [here](https://hub.docker.com/r/fnndsc/pfdcm)). Once (configured and) initialized, `pfdcm` can simplify the pulling of image data from a PACS to the local filesystem. In the case where `pfdcm` is deployed as part of a [ChRIS](https://github.com/FNNDSC/ChRIS_ultron_backEnd) system, the [ChRIS UI](https://github.com/FNNDSC/ChRIS_ui) will use `pfdcm` to retrieve, push, and register images to a ChRIS instance.
+`pfdcm` provides a REST-API aware service that acts as an intermediary between some client and a Radiology Medical Image Picture Archiving and Communication System (PACS). The client is typically another software agent, or `curl` type command line calls to the API directly.
 
-Typical clients can range from CLI `curl` calls, to shell scripts, to javascript interfaces. This repository provides one such shell-based client `pfdcm.sh` as reference and working exemplar.
+`pfdcm` is deployed as a docker container most often built from this source repo (and also available [here](https://hub.docker.com/r/fnndsc/pfdcm)). Once (configured and) initialized, `pfdcm` can simplify the pulling of image data from a PACS to the local filesystem. In the case where `pfdcm` is deployed as part of a [ChRIS](https://github.com/FNNDSC/ChRIS_ultron_backEnd) system, `pfdcm` can also *push* images to ChRIS storage and also *register* images to the ChRIS internal database. Furthermore, the [ChRIS UI](https://github.com/FNNDSC/ChRIS_ui) uses `pfdcm` to provide image Query and Retrieve to a PACS.
+
+This repository provides a shell-based client [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) as reference and working exemplar as well as more detailed Jupyter-style shell [`workflow.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/workflow.sh).
 
 ## TL;DR
 
+If you want to simply get up and running as fast as possible, read this section. Note the *Build* and *Configure* sections only need to be consulted once, thereafter it should be sufficient to only *Run* the service each time a deployment is needed.
+
+### Build
+
+```bash
+docker build --build-arg UID=$UID -t local/pfdcm .
+```
+
+(make sure that the `UID` environment variable is in fact set)
+
 ### Configure
 
-If this is the very first time you are trying to deploy `pfdcm`, you need to configure a `defaults.json` file.
+If this is the very first time you are trying to deploy `pfdcm`, you need to configure a `defaults.json` file and create two serivces files, `cube.json` (for logging into ChRIS to *register* files) and `swift.json` (for accessing the swift storage to *push* images).
+
+**NB: Take care to assure that the `cube.json` and `swift.json` files have no credentialing errors! Issues with login to CUBE or swift storage can result in hard to identify errors, especially in the ChRIS UI.**
+
+The simplest way to create the `defaults.json` file is to use the helper script [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) and run, for example:
+
+```bash
+    pfdcm.sh    --saveToJSON defaults.json                                     \
+                --URL http://ip.of.pfdm.host:4005                              \
+                --serviceRoot /home/dicom                                      \
+                --swiftKeyName local                                           \
+                    --swiftIP ip.of.swift.storage                              \
+                    --swiftPort 8080                                           \
+                    --swiftLogin chris:chris1234                               \
+                --PACS PACSDCM                                                 \
+                    --aet CHRISV3                                              \
+                    --aetl PACSDCM                                             \
+                    --aec PACSDCM                                              \
+                    --serverIP ip.of.pacs.server                               \
+                    --serverPort 104                                           \
+                --cubeKeyName local                                            \
+                    --cubeURL http://ip.of.cube.backend:8000/api/v1/           \
+                    --cubeUserName chris                                       \
+                    --cubePACSservice PACSDCM                                  \
+                    --cubeUserPassword chris1234 --
+```
+
+Obviously setting appropriate values where needed. Once this file has been created, the two service files can be generated with:
+
+```bash
+pfdcm.sh -u --swiftSetupDo --
+pfdcm.sh -u --cubeSetupDo --
+```
+
+which will save the service files in their default location of
+
+```bash
+/home/dicom/services
+```
 
 ### Run
 
-## Introduction
+Assuming a completed configuration, start the `pfdcm` service with
+
+```bash
+docker run --name pfdcm  --rm -it -d                                            \
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
+        -v /home/dicom:/home/dicom                                             	\
+        local/pfdcm /start-reload.sh
+```
+
+Once the container is successfully launched, initialize it with
+
+```bash
+pfdcm.sh -u -i --
+```
+
+Congratulations! `pfdcm` should be ready for use!
+
+## Detailed discussion
 
 PACS is a largely pre-21st century attempt at digitizing medical imaging and uses paradigms and approaches that seem outdated by today's networking standards. While various PACS vendors have tried in some shape or form to adapt to newer approaches, there exists no standard PACS API-REST interface, leading to a large space of vendor specific and often non-opensource interfaces.
 
@@ -43,45 +110,13 @@ Note however that this full experience does imply using two separate REST-API se
 * the `pfdcm` API to `Query`/`Retrieve`/`Push-to-swift`/`Register-to-CUBE`
 * the `CUBE` API to download an image file
 
+### Setting up PACS Server
 
-
-## Usage
-
-Simplest build:
-
-```bash
-docker build -t local/pfdcm .
-```
-
-### Run
-
-Production server with worker auto-tuning
-
-```bash
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
-        local/pfdcm /start-reload.sh
-```
-
-Running with hot-reloading
-
-```bash
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
-        -v $PWD/pfdcm:/app:ro                                                  \
-        local/pfdcm /start-reload.sh
-```
-
-
-
-## Development
-
-#### Setting up PACS Server
-
-The PACS server used typically for development is Orthanc. We use a slightly customized version of this, called [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc). Clone this repository locally and checkout to the `persistent-db` branch.
+While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) largely developed by Sébastien Jodogne. We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc):
 
 ```bash
 git clone https://github.com/FNNDSC/orthanc-fnndsc
+cd orthanc-fnndsc
 git checkout persistent-db
 ```
 
@@ -97,8 +132,7 @@ In this directory, find the `orthanc.json` file and make the following edits
   }
   ```
 
-- Edit the IP address in this key (192.168.1.189 in this example), to your local machine's IP address. You can either find this by using the `ip` command or set this to 127.0.0.1 (loopback IP).
-
+- Edit the IP address in this key (192.168.1.189 in this example), to reflect your local machine's IP address. **Use the actual IP and not `localhost` nor `127.0.0.1`**.
 - Now run orthanc with
 
   ```bash
@@ -107,30 +141,9 @@ In this directory, find the `orthanc.json` file and make the following edits
 
 To make sure Orthanc started successfully, open `http://localhost:8042` in a browser and you should get a Basic Auth prompt. Use username `orthanc` and password `orthanc` which are the defaults. You should now be able to interact with Orthanc and upload files.
 
-#### Running a local PFDCM API
-
-Colorful, <kbd>Ctrl-C</kbd>-able server with live/hot reload. Source code changes do not requre a server restart (although some server components might need to be re-initialized).
-Changes are applied automatically when the file is saved to disk.
-
-```bash
-docker run --rm -it                                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                \
-        -v $PWD/pfdcm:/app:ro                                                  \
-        local/pfdcm /start-reload.sh
-```
-
-Now you'll need to initialize PFDCM to use it as an API for ChRIS UI. Either follow the instructions in [workflow.sh](./pfdcm/workflow.sh) or use a REST client like [Insomnia](https://insomnia.rest/) (a [request collection file](./examples/Insomnia.yaml) is provided, import this) or PostMan.
-
-- Initialize the xinetd listener. Simply use the default.
-- Register a PACS service, orthanc in our case. Make sure that the `serverIP` field matches exactly with the IP address of your machine that you put in `orthanc.json` in a previous step.
-- Register a local CUBE and a local Swift. The `"cubeKeyName"` and `"swifteyName"` that you provide here will be used in setting up ChRIS_ui.
-- Test by performing a find query.
-
-
-
 ### API swagger
 
-Full API swagger is available. Once you have started `pfdcm`, simply navigate to the machine hosting the container (usually `localhost`), so http://localhost:4005/docs .
+Full API swagger is available. Once you have started `pfdcm`, simply navigate to the machine hosting the container (usually `localhost`), so [http://localhost:4005/docs](http://localhost:4005/docs) .
 
 ### Examples
 
@@ -189,6 +202,6 @@ pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
 
 Note that the `-u` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
 
-Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info. This page (and wiki) will be updated.
+Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info.
 
 _-30-_
