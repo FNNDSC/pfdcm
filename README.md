@@ -1,14 +1,14 @@
 # `pfdcm`
 
-*an Open-source service providing a REST API to communicate with any number of medical image databases (PACS) instances concurrently*
+*an Open-source service providing a bridge between a PACS and a ChRIS instance that offers a REST API to communicate with any number of medical image databases (PACS) instances concurrently*
 
 ## Abstract
 
-`pfdcm` provides a REST-API aware service that acts as an intermediary between some client and a Radiology Medical Image Picture Archiving and Communication System (PACS). The client is typically another software agent, or `curl` type command line calls to the API directly.
+`pfdcm` provides a REST-API aware service that acts as an intermediary between some client, a Picture Archiving and Communication System (PACS), *and* typically a ChRIS instance. The client that consumes this REST-API is usually another software agent, or `curl` type command line calls to the API directly.
 
-`pfdcm` is deployed as a docker container most often built from this source repo (and also available [here](https://hub.docker.com/r/fnndsc/pfdcm)). Once (configured and) initialized, `pfdcm` can simplify the pulling of image data from a PACS to the local filesystem. In the case where `pfdcm` is deployed as part of a [ChRIS](https://github.com/FNNDSC/ChRIS_ultron_backEnd) system, `pfdcm` can also *push* images to ChRIS storage and also *register* images to the ChRIS internal database. Furthermore, the [ChRIS UI](https://github.com/FNNDSC/ChRIS_ui) uses `pfdcm` to provide image Query and Retrieve to a PACS.
+`pfdcm` is deployed as a docker container most often built from this source repo (and also available [here](https://hub.docker.com/r/fnndsc/pfdcm)). Once (configured and) initialized, `pfdcm` can greatly simplify the tasks of (bulk) pulling image data from a PACS and saving on local filesystem. In the case where `pfdcm` is instantiated as part of a [ChRIS](https://github.com/FNNDSC/ChRIS_ultron_backEnd) deployment, `pfdcm` can also *push* images to ChRIS storage and also *register* images to the ChRIS internal database. Furthermore, the [ChRIS UI](https://github.com/FNNDSC/ChRIS_ui) uses `pfdcm` to provide a friendly web-based interfaced to Quering and Retrieving images from a PACS and importing into ChRIS.
 
-This repository provides a shell-based client [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) as reference and working exemplar as well as more detailed Jupyter-style shell [`workflow.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/workflow.sh).
+This repository provides a shell-based client [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) as reference and working exemplar as well as more detailed Jupyter-style shell [`workflow.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/workflow.sh) script.
 
 ## TL;DR
 
@@ -17,14 +17,12 @@ If you want to simply get up and running as fast as possible, read this section.
 ### Build
 
 ```bash
-docker build --build-arg UID=$UID -t local/pfdcm .
+docker build -t local/pfdcm .
 ```
-
-(make sure that the `UID` environment variable is in fact set)
 
 ### Configure
 
-If this is the very first time you are trying to deploy `pfdcm`, you need to configure a `defaults.json` file and create two serivces files, `cube.json` (for logging into ChRIS to *register* files) and `swift.json` (for accessing the swift storage to *push* images).
+If this is the very first time you are trying to deploy `pfdcm`, you need to configure a `defaults.json` file and create two services files, `swift.json` (for accessing the swift storage to *push* images), and `cube.json` (for logging into ChRIS to *register*  the *pushed* files).
 
 **NB: Take care to assure that the `cube.json` and `swift.json` files have no credentialing errors! Issues with login to CUBE or swift storage can result in hard to identify errors, especially in the ChRIS UI.**
 
@@ -61,8 +59,11 @@ pfdcm.sh -u --cubeSetupDo --
 which will save the service files in their default location of
 
 ```bash
-/home/dicom/services
+/home/dicom/services/cube.json
+/home/dicom/services/swift.json
 ```
+
+Please check these files very carefully and again make sure that values (in particular login names and passwords) are correct!
 
 ### Run
 
@@ -75,7 +76,7 @@ docker run --name pfdcm  --rm -it -d                                            
         local/pfdcm /start-reload.sh
 ```
 
-Once the container is successfully launched, initialize it with
+Once the container is successfully launched, initialize it with (note this takes about a second or so)
 
 ```bash
 pfdcm.sh -u -i --
@@ -112,7 +113,7 @@ Note however that this full experience does imply using two separate REST-API se
 
 ### Setting up PACS Server
 
-While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) largely developed by Sébastien Jodogne. We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc):
+While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) (developed by Sébastien Jodogne). We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc):
 
 ```bash
 git clone https://github.com/FNNDSC/orthanc-fnndsc
@@ -143,7 +144,7 @@ To make sure Orthanc started successfully, open `http://localhost:8042` in a bro
 
 ### API swagger
 
-Full API swagger is available. Once you have started `pfdcm`, simply navigate to the machine hosting the container (usually `localhost`), so [http://localhost:4005/docs](http://localhost:4005/docs) .
+Full API swagger is available. Once you have started `pfdcm`, and assuming that the machine hosting the container is `localhost`, navigate to [http://localhost:4005/docs](http://localhost:4005/docs) .
 
 ### Examples
 
@@ -164,7 +165,19 @@ For full exemplar documented examples, see `pfdcm/workflow.sh` in this repositor
 
 #### Quick-n-dirty CLI example
 
-Once you have started the container, the `pfdcm.sh` script is probably the easiest way to interact with the service. First, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID`:
+Once you have started the container, the `pfdcm.sh` script is probably the easiest way to interact with the service. Typically there are four steps/phases in a full cycle, denoted by the following verbs `--query`, `--retrieve`, `--push`, `--register`. The command line for a given interaction largely stays identical, with only the verb above changing, and almost always in the above ordered sequence.
+
+Note that the `--push` and `--register` verbs are only meaningful in the context of pushing and registering to ChRIS. If you only want to pull images to the file system and don't care/need them to also appear in ChRIS, your sequence will be `--query` and `--retrieve` only.
+
+The `--query` operation blocks, meaning that the command line will wait until this completes. All the other verbs are **asynchronous** meaning that the command line will return immediately. **It is very important that you wait until an asynchronous operation is complete before using another verb in the cycle**. To determine the status of an asynchronous operation, use the `--status` verb. This will return a status report where, for each image series, a text result of form:
+
+```bash
+[ PACS:116/JSON:116/DCM:116/PUSH:116/REG:116 ] │  GEechoes3_EPI_SMS2_GRAPPA2_Echo_1
+```
+
+denotes that (in this example) there were 116 images in the `PACS`, these have been retrieved and cataloged in 116 `JSON` files, packed and saved as 116 `DCM` images, also 116 images have been `PUSH`ed to ChRIS swift storage and 116 images have been `REG`istered by ChRIS, corresponding to each of the verbs in a typical interaction cycle. Obviously you need to wait until the numbers in each cycle match the `PACS` before calling the next cycle.
+
+So, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID`:
 
 ```bash
 pfdcm.sh -u --query -- "PatientID:2233445"
@@ -203,5 +216,62 @@ pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
 Note that the `-u` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
 
 Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info.
+
+#### Bulk operations
+
+`pfdcm.sh` also offers bulk operations that follow the same contract as above (i.e. `--query`, `--retrieve`, `--status`, `--push`, `--register`). To perform a bulk set of operations, simply specify the set of search terms separated by a semi colon `;` as a tokenization character. So imagine you have four MRNs, `1111111`, `2222222`, `3333333`, `4444444`. You can specify all these in one search construct:
+
+```bash
+./pfdcm.sh -u --query -- \
+    "PatientID:1111111;PatientID:2222222;PatientID:3333333;PatientID:4444444"
+```
+
+Note that each component of the search can be further specified by adding a comma list of refinements if you choose:
+
+```bash
+./pfdcm.sh -u --query -- \
+    "PatientID:1111111,StudyDate:20210901;PatientID:2222222;PatientID:3333333;PatientID:4444444"
+```
+
+which will limit `PatientID:1111111` results to only those that had the specified `StudyDate` as well.
+
+In general, the search construct can become cumbersome especially if a long list of single search tokens (e.g. `PatientID`) is used. In that case, you can use the `-K` (or `--multikey`) flag to simplify somewhat by indicating _apply this DICOM key to each element of the search construct_:
+
+```bash
+./pfdcm.sh -u --query -K PatientID -- \
+    "1111111;2222222;3333333;4444444"
+```
+
+When using a `-K` then it is not possible to add additional filter arguments on a search construct (in other words you can't further filter on `StudyDate` for example).
+
+#### ILoveCandy (and maybe spreadsheets)
+
+When doing bulk operations, the default colorized tabular output can become confusing. Adding a `-Q` to the CLI will also indicate the search token being as it is being processed used which can help. Another option is to use a `-T csv` (or equivalently `--reportType csv`) to generate a spreadsheet-type output.
+
+```bash
+./pfdcm.sh -u --query -Q -T csv -K PatientID -- \
+    "1111111;2222222;3333333;4444444"
+```
+
+This will still attempt to print a report-style result that while pretty in the console, is not ideal for using in a spreadsheet. If you want to create import-friendly output with a specific cell separator character (like `,`) you can do
+
+```bash
+./pfdcm.sh -u --query -Q -T csv --csvCLI "--csvSeparator ," \
+          -K PatientID -K PatientID -- \
+          "1111111;2222222;3333333;4444444" > table.csv
+```
+
+which will save the results into a file `table.csv` that is suitable for ingestion into a spreadsheet program.
+
+#### Orthanc quirks
+
+If you are using Orthanc, it is possible to perform an open ended interaction on **all** the images in the database. This is not *NOT* recommended for obvious reasons on production systems! Still, to get a list of _everything_ in an Orthanc PACS server, do
+
+```bash
+./pfdcm.sh -u --query -T csv -K "" -- ":all"
+```
+
+**DO NOT ATTEMPT ON A REAL PACS SYSTEM**.
+
 
 _-30-_

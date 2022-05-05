@@ -335,11 +335,11 @@ declare -i b_showSearch=0
 # PRECONDITIONS
 # o A pull on the current `pfdcm`
 # o Building the docker image, and executing with
-EXECpfdm="
-docker run --rm -it -d --name pfdcm                                 \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113     \
-        -v $DBROOT:$DBROOT                                          \
-        -v $PWD/pfdcm:/app:ro                                       \
+EXECpfdcm="
+docker run --rm -it -d --name pfdcm                                 \\
+        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113     \\
+        -v $DBROOT:$DBROOT  \\
+        -v $PWD/pfdcm:/app:ro \\
         local/pfdcm /start-reload.sh
 "
 
@@ -359,7 +359,7 @@ while :; do
         -g|--register)          b_registerDo=1              ;;
         -s|--status)            b_statusDo=1                ;;
         -j|--json)              b_JSONreport=1              ;;
-        -K|--mulitkey)          DICOMKEY=$2                 ;;
+        -K|--multikey)          DICOMKEY=$2                 ;;
         -L|--listener)          LISTENER=$2                 ;;
         --listenerSetupGet)     LISTENER=$2
                                 b_listenerSetupGet=1        ;;
@@ -491,13 +491,14 @@ function evaljq {
     CMD=$1
     eval "$CMD" | jq
     if (( $? )) ; then
-        MSG1="An error in parsing the command was detected."
-        MSG2="This is often caused when using the command in a proxied environment."
-        MSG3="Try the command again, this time using '--no-proxy'"
+        MSG1="An error in parsing the command was detected!"
+        MSG2="Is the pfdcm container running?\n$EXECpfdcm\n"
+        MSG3="Alternatively, try the command again, this time using '--no-proxy'"
         if [[ -e $(which tput) ]] ; then
             tput setaf 1; echo "$MSG1"
             echo ""
             tput setaf 2; echo -e "$MSG2\n$MSG3"
+            exit 1
         else
             echo "$MSG1"
             echo ""
