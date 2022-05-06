@@ -293,6 +293,12 @@ If you are using Orthanc, it is possible to perform an open ended interaction on
 ./pfdcm.sh -u --query -T csv -K "" -- ":all"
 ```
 
+The following will dump the entire contents of Orthanc into a csv file suitable for loading in a spreadsheet:
+
+```bash
+./pfdcm.sh -u --query -Q -T csv --csvCLI "--csvSeparator ," -K "" -- ":all" > /tmp/table.csv
+```
+
 **DO NOT ATTEMPT ON A REAL PACS SYSTEM**.
 
 
