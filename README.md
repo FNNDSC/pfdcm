@@ -289,7 +289,7 @@ which will save the results into a file `table.csv` that is suitable for ingesti
 
 #### Orthanc quirks
 
-If you are using Orthanc, it is possible to perform an open ended interaction on **all** the images in the database. This is not *NOT* recommended for obvious reasons on production systems! Still, to get a list of _everything_ in an Orthanc PACS server, do
+If you are using Orthanc, it is possible to perform an open ended interaction on **all** the images in the database. This is *NOT* recommended for obvious reasons on production systems! Still, to get a list of _everything_ in an Orthanc PACS server, do
 
 ```bash
 ./pfdcm.sh -u --query -T csv -K "" -- ":all"
