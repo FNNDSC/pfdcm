@@ -37,8 +37,8 @@ The simplest way to create the `defaults.json` file is to use the helper script 
 
 ```bash
 cd pfdcm
-./pfdcm.sh    --saveToJSON defaults.json                                   \
-            --URL http://ip.of.pfdm.host:4005                              \
+./pfdcm.sh  --saveToJSON defaults.json                                     \
+            --URL http://ip.of.pfdcm.host:4005                             \
             --serviceRoot /home/dicom                                      \
             --swiftKeyName local                                           \
                 --swiftIP ip.of.swift.storage                              \
@@ -123,7 +123,7 @@ Note however that this full experience does imply using two separate REST-API se
 * the `pfdcm` API to `Query`/`Retrieve`/`Push-to-swift`/`Register-to-CUBE`
 * the `CUBE` API to download an image file
 
-### Setting up PACS Server
+### Setting Up and Connecting to a PACS Server
 
 While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) (developed by Sébastien Jodogne). We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc) and to use the `persistent-db` branch:
 
@@ -153,7 +153,7 @@ In this directory, open the `orthanc.json` file and make the following edits
   ./make.sh -i
   ```
 
-To make sure Orthanc started successfully, visit [http://localhost:8042](http://localhost:8042) in a browser and log in with username `orthanc` and password `orthanc`. You should now be able to interact with Orthanc and upload files.
+To make sure Orthanc started successfully, visit [http://localhost:8042](http://localhost:8042) in a browser and log in with username `orthanc` and password `orthanc`. You should now be able to interact with Orthanc and upload files. Feel free to pull our publically available anonymized [T1 MPRAGE scan of a normal 3 year old brain](https://github.com/FNNDSC/SAG-anon) and upload into your Orthanc.
 
 ### "hello, pfdcm"
 
