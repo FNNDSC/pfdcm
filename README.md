@@ -17,6 +17,11 @@ If you want to simply get up and running as fast as possible, read this section.
 ### Build
 
 ```bash
+# Pull repo...
+gh repo clone FNNDSC/pfdcm
+# Enter the repo...
+cd pfdcm
+# and build the container
 docker build -t local/pfdcm .
 ```
 
@@ -26,39 +31,43 @@ If this is the very first time you are trying to deploy `pfdcm`, you need to con
 
 **NB: Take care to assure that the `cube.json` and `swift.json` files have no credentialing errors! Issues with login to CUBE or swift storage can result in hard to identify errors, especially in the ChRIS UI.**
 
-The simplest way to create the `defaults.json` file is to use the helper script [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) and run, for example:
+The simplest way to create the `defaults.json` file is to use the helper script [`pfdcm.sh`](https://github.com/FNNDSC/pfdcm/blob/master/pfdcm/pfdcm.sh) that is located in the `pfdcm` subdir of the repo and run, for example:
 
 ```bash
-    pfdcm.sh    --saveToJSON defaults.json                                     \
-                --URL http://ip.of.pfdm.host:4005                              \
-                --serviceRoot /home/dicom                                      \
-                --swiftKeyName local                                           \
-                    --swiftIP ip.of.swift.storage                              \
-                    --swiftPort 8080                                           \
-                    --swiftLogin chris:chris1234                               \
-                --PACS PACSDCM                                                 \
-                    --aet CHRISV3                                              \
-                    --aetl PACSDCM                                             \
-                    --aec PACSDCM                                              \
-                    --serverIP ip.of.pacs.server                               \
-                    --serverPort 104                                           \
-                --cubeKeyName local                                            \
-                    --cubeURL http://ip.of.cube.backend:8000/api/v1/           \
-                    --cubeUserName chris                                       \
-                    --cubePACSservice PACSDCM                                  \
-                    --cubeUserPassword chris1234 --
+cd pfdcm
+./pfdcm.sh    --saveToJSON defaults.json                                   \
+            --URL http://ip.of.pfdm.host:4005                              \
+            --serviceRoot /home/dicom                                      \
+            --swiftKeyName local                                           \
+                --swiftIP ip.of.swift.storage                              \
+                --swiftPort 8080                                           \
+                --swiftLogin chris:chris1234                               \
+            --PACS PACSDCM                                                 \
+                --aet CHRISV3                                              \
+                --aetl PACSDCM                                             \
+                --aec PACSDCM                                              \
+                --serverIP ip.of.pacs.server                               \
+                --serverPort 104                                           \
+            --cubeKeyName local                                            \
+                --cubeURL http://ip.of.cube.backend:8000/api/v1/           \
+                --cubeUserName chris                                       \
+                --cubePACSservice PACSDCM                                  \
+                --cubeUserPassword chris1234 --
 ```
 
 Obviously setting appropriate values where needed. Once this file has been created, the two service files can be generated with:
 
 ```bash
-pfdcm.sh -u --swiftSetupDo --
-pfdcm.sh -u --cubeSetupDo --
+./pfdcm.sh -u --swiftSetupDo --
+./pfdcm.sh -u --cubeSetupDo --
 ```
 
 which will save the service files in their default location of
 
 ```bash
+# The default location for all the DICOM related interaction
+# is /home/dicom -- if you don't have this directory already
+# it's a good idea to create it.
 /home/dicom/services/cube.json
 /home/dicom/services/swift.json
 ```
@@ -67,7 +76,7 @@ Please check these files very carefully and again make sure that values (in part
 
 ### Run
 
-Assuming a completed configuration, start the `pfdcm` service with
+Assuming a completed configuration, start the `pfdcm` service from the root dir of the repo with
 
 ```bash
 docker run --name pfdcm  --rm -it -d                                            \
@@ -76,10 +85,11 @@ docker run --name pfdcm  --rm -it -d                                            
         local/pfdcm /start-reload.sh
 ```
 
-Once the container is successfully launched, initialize it with (note this takes about a second or so)
+Once the container is successfully launched, initialize it with (note this takes about a second or so) by running (in the `pfdcm` subdirectory of the repo)
 
 ```bash
-pfdcm.sh -u -i --
+cd pfdcm
+./pfdcm.sh -u -i --
 ```
 
 Congratulations! `pfdcm` should be ready for use!
@@ -113,7 +123,7 @@ Note however that this full experience does imply using two separate REST-API se
 
 ### Setting up PACS Server
 
-While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) (developed by Sébastien Jodogne). We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc):
+While setting up a PACS is largely out-of-scope of this document, you can deploy the most excellent open source [Orthanc](https://www.orthanc-server.com) (developed by Sébastien Jodogne). We recommend a lightly customized version of this, [orthanc-fnndsc](https://github.com/FNNDSC/orthanc-fnndsc) and to use the `persistent-db` branch:
 
 ```bash
 git clone https://github.com/FNNDSC/orthanc-fnndsc
@@ -121,7 +131,7 @@ cd orthanc-fnndsc
 git checkout persistent-db
 ```
 
-In this directory, find the `orthanc.json` file and make the following edits
+In this directory, open the `orthanc.json` file and make the following edits
 
 - Find the `"DicomModalities"` block in the JSON file, and find the `"CHRISLOCAL"` key.
 
@@ -133,20 +143,17 @@ In this directory, find the `orthanc.json` file and make the following edits
   }
   ```
 
-- Edit the IP address in this key (192.168.1.189 in this example), to reflect your local machine's IP address. **Use the actual IP and not `localhost` nor `127.0.0.1`**.
-- Now run orthanc with
+- Edit the IP address in this key (`192.168.1.189` in this example), to reflect your local machine's IP address. **We highly recommend to use the actual IP and not `localhost` nor `127.0.0.1`**.
+
+- Now fire up our customized Othanc with
 
   ```bash
   ./make.sh -i
   ```
 
-To make sure Orthanc started successfully, open `http://localhost:8042` in a browser and you should get a Basic Auth prompt. Use username `orthanc` and password `orthanc` which are the defaults. You should now be able to interact with Orthanc and upload files.
+To make sure Orthanc started successfully, visit [http://localhost:8042](http://localhost:8042) in a browser and log in with username `orthanc` and password `orthanc`. You should now be able to interact with Orthanc and upload files.
 
-### API swagger
-
-Full API swagger is available. Once you have started `pfdcm`, and assuming that the machine hosting the container is `localhost`, navigate to [http://localhost:4005/docs](http://localhost:4005/docs) .
-
-### Examples
+### "hello, pfdcm"
 
 Using [httpie](https://httpie.org/), let's ask `pfdcm` about itself
 
@@ -163,7 +170,11 @@ http :4005/api/v1/hello/ echoBack=="Hello, World!"
 
 For full exemplar documented examples, see `pfdcm/workflow.sh` in this repository as well as `HOWTORUN`. Also consult the `pfdcm/pfdcm.sh` script for more details.
 
-#### Quick-n-dirty CLI example
+### API swagger
+
+Full API swagger is available. Once you have started `pfdcm`, and assuming that the machine hosting the container is `localhost`, navigate to [http://localhost:4005/docs](http://localhost:4005/docs) .
+
+## CLI example
 
 Once you have started the container, the `pfdcm.sh` script is probably the easiest way to interact with the service. Typically there are four steps/phases in a full cycle, denoted by the following verbs `--query`, `--retrieve`, `--push`, `--register`. The command line for a given interaction largely stays identical, with only the verb above changing, and almost always in the above ordered sequence.
 
@@ -180,37 +191,37 @@ denotes that (in this example) there were 116 images in the `PACS`, these have b
 So, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID`:
 
 ```bash
-pfdcm.sh -u --query -- "PatientID:2233445"
+./pfdcm.sh -u --query -- "PatientID:2233445"
 ```
 
 In general, you can use any reasonable DICOM tag to drive the query. For more fine tuned searches, you can do
 
 ```bash
-pfdcm.sh -u --query -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh -u --query -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 to limit the query to, in this case, a specific study date. Once you have determined an image set of interest, you can request a `retrieve`
 
 ```bash
-pfdcm.sh -u --retrieve -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh -u --retrieve -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 which will handle incoming file transmission from the PACS and store/pack the files on the local (container) filesystem. Note that the `retrieve` is an asynchronous request and will return to the client immediately. To determine the status of the operation,
 
 ```bash
-pfdcm.sh -u --status -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh -u --status -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 Once all the files have been retrieved, the files can be pushed to CUBE swift storage (assuming an available CUBE instance):
 
 ```bash
-pfdcm.sh -u --push -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh -u --push -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 after a successful push operation (check on progress using `status`), files in swift storage can be registered to the CUBE internal database with
 
 ```bash
-pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 Note that the `-u` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
@@ -242,7 +253,18 @@ In general, the search construct can become cumbersome especially if a long list
     "1111111;2222222;3333333;4444444"
 ```
 
-When using a `-K` then it is not possible to add additional filter arguments on a search construct (in other words you can't further filter on `StudyDate` for example).
+When using a `-K` then it is not possible to add additional filter arguments on a search construct (in other words you can't further filter on `StudyDate` for example). Note that you can also present the above command as
+
+```bash
+./pfdcm.sh -u --query -K PatientID -- \"
+1111111;
+2222222;
+3333333;
+4444444;
+"
+```
+
+which might be easier if you have a spreadsheet of MRNs to process. Take care to still add the semicolon `;` for all the entries! This semi-colon is optional on the final entry.
 
 #### ILoveCandy (and maybe spreadsheets)
 
@@ -257,7 +279,7 @@ This will still attempt to print a report-style result that while pretty in the 
 
 ```bash
 ./pfdcm.sh -u --query -Q -T csv --csvCLI "--csvSeparator ," \
-          -K PatientID -K PatientID -- \
+          -K PatientID -- \
           "1111111;2222222;3333333;4444444" > table.csv
 ```
 
