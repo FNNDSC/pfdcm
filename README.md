@@ -1,5 +1,7 @@
 # `pfdcm`
 
+[![Build](https://github.com/FNNDSC/pfdcm/actions/workflows/build.yml/badge.svg)](https://github.com/FNNDSC/pfdcm/actions/workflows/build.yml)
+
 *an Open-source service providing a bridge between a PACS and a ChRIS instance that offers a REST API to communicate with any number of medical image databases (PACS) instances concurrently*
 
 ## Abstract
