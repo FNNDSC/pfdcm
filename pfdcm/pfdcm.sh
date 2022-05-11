@@ -336,6 +336,12 @@ declare -i b_showSearch=0
 # o A pull on the current `pfdcm`
 # o Building the docker image, and executing with
 EXECpfdcm="
+#
+# If you'd like to debug, vol map the source into the container
+#
+# Please don't blindly copy-paste this command unless you know
+# what it all does!
+#
 docker run --rm -it -d --name pfdcm                                 \\
         -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113     \\
         -v $DBROOT:$DBROOT  \\
