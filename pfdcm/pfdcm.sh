@@ -759,7 +759,7 @@ for EXPR in ${listEXPR//;/ } ; do
         if (( b_queryDo )) ; then
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                if (( b_showSearch )) ; then echo "$PAIR" ; fi
+                if (( b_showSearch )) ; then echo "$EXPR" ; fi
                 eval "$CURLcmd" | jq '.pypx' | $(reportify)
         fi
         if (( b_statusDo )) ; then
@@ -768,7 +768,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                if (( b_showSearch )) ; then echo "$PAIR" ; fi
+                if (( b_showSearch )) ; then echo "$EXPR" ; fi
                 eval "$CURLcmd" | jq '.pypx' | $(reportify seriesStatus)
         fi
         if (( b_retrieveDo )) ; then
@@ -777,7 +777,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/  "$JSON")
                 vprint "$CURLcmd"
-                if (( b_showSearch )) ; then echo "$PAIR" ; fi
+                if (( b_showSearch )) ; then echo "$EXPR" ; fi
                 evaljq "$CURLcmd"
         fi
         if (( b_pushDo )) ; then
@@ -787,7 +787,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                if (( b_showSearch )) ; then echo "$PAIR" ; fi
+                if (( b_showSearch )) ; then echo "$EXPR" ; fi
                 evaljq "$CURLcmd"
         fi
         if (( b_registerDo )) ; then
@@ -797,7 +797,7 @@ for EXPR in ${listEXPR//;/ } ; do
                     "json_response": true}' <<< $JSON)
                 CURLcmd=$(CURL POST PACS/thread/pypx/ "$JSON")
                 vprint "$CURLcmd"
-                if (( b_showSearch )) ; then echo "$PAIR" ; fi
+                if (( b_showSearch )) ; then echo "$EXPR" ; fi
                 evaljq "$CURLcmd"
         fi
     fi
