@@ -69,4 +69,6 @@ To check that the service is working properly, run the following query
 ./pfdcm.sh -u -Q --query -T csv  -- (cat qr.txt)
 ```
 
+which will perform a quick PACS Query on the contents of the file `qr.txt` (note that this file is NOT part of this repo and exists solely in the FNNDSC directory; note also the `fish` shell conventions).
+
 _-30-_
