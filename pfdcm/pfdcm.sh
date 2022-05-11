@@ -719,6 +719,7 @@ fi
 # pfdcm directive.
 #
 PAYLOAD=$(preamble)
+declare -i loop=1
 for EXPR in ${listEXPR//;/ } ; do
     if (( ${#EXPR} )) ; then
         sub=""
@@ -755,6 +756,7 @@ for EXPR in ${listEXPR//;/ } ; do
                 exit 1
             fi
         fi
+ 	printf -v EXPR "[ %03d ] %s" $loop "$EXPR"	
         JSON=$(jq '. += {"PACSdirective" : '"$BODY"'}' <<< $(preamble))
         if (( b_queryDo )) ; then
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
@@ -801,6 +803,7 @@ for EXPR in ${listEXPR//;/ } ; do
                 evaljq "$CURLcmd"
         fi
     fi
+    ((loop++))
 done
 
 #
