@@ -57,9 +57,31 @@ docker run --name pfdcm  --rm -it -d                                            
 # titan:/home/chris-local/src/pfdcm
 cd pfdcm
 ./pfdcm.sh -u -i --
-
-# Wait a few seconds. On susc
 ```
+
+The prompt will block. Wait a few seconds. On success you'll see a screen full of JSON, typically ending with
+
+```json
+      "prior": {
+        "status": true,
+        "install": {
+          "stdout": "",
+          "stderr": "",
+          "cwd": "/app",
+          "cmd": "mv /tmp/dicomlistener /etc/xinetd.d/dicomlistener",
+          "returncode": 0
+        },
+        "prior": {
+          "status": true,
+          "fileContents": "\n        service dicomlistener\n        {\n            disable             = no\n            socket_type         = stream\n            wait                = no\n            user                = root\n            server              = /usr/local/bin/storescp.sh\n            server_args         = -t /tmp/data -E /usr/local/bin -D /home/dicom -p 11113\n            type                = UNLISTED\n            port                = 10502\n            bind                = 0.0.0.0\n        } ",
+          "file": "/tmp/dicomlistener"
+        }
+      }
+    }
+  }
+}
+```
+and the prompt will return.
 
 ## Test
 
