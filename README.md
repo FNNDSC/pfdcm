@@ -268,6 +268,21 @@ When using a `-K` then it is not possible to add additional filter arguments on 
 
 which might be easier if you have a spreadsheet of MRNs to process. Take care to still add the semicolon `;` for all the entries! This semi-colon is optional on the final entry.
 
+For completeness sake, and staying with the spreadsheet theme, you can construct a rather complete query specification on the CLI using a copy-paste from a properly "formatted" spreadsheet:
+
+```bash
+./pfdcm.sh -u --query -- \"
+PatientID:1111111,StudyDate:19000101;
+PatientID:2222222,StudyDate:19001101;
+PatientID:3333333,StudyDate:19002101;
+PatientID:4444444,StudyDate:19003101;
+AccessionNumber:7654321;
+SeriesInstanceUID:1.3.12.2.1107.5.2.32.35201.30000017082012560654900020230
+"
+```
+
+The above should perform 6 queries, each on the specified patterning.
+
 #### ILoveCandy (and maybe spreadsheets)
 
 When doing bulk operations, the default colorized tabular output can become confusing. Adding a `-Q` to the CLI will also indicate the search token being as it is being processed used which can help. Another option is to use a `-T csv` (or equivalently `--reportType csv`) to generate a spreadsheet-type output.
