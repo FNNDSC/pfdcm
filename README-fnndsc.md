@@ -62,7 +62,10 @@ cd pfdcm
 The prompt will block. Wait a few seconds. On success you'll see a screen full of JSON, typically ending with
 
 ```json
-      "prior": {
+{
+  {
+    { 
+        "prior": {
         "status": true,
         "install": {
           "stdout": "",
