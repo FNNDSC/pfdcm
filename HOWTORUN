@@ -19,8 +19,9 @@ docker run --name pfdcm  --rm -it      						\
 # Quick 'n dirty run --name pfdcm  -- with volume mapping.
 # Obviously change port mappings if needed (and in the Dockerfile)
 docker run --name pfdcm  --rm -it -d                                            \
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
-        -v /home/dicom:/home/dicom                                             	\
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:11113 -p 11113:11113  \
+        -v /home/dicom:/home/dicom                                              \
+        -v /neuro/users/chris/PACS:/neuro/users/chris/PACS                      \
         local/pfdcm /start-reload.sh
 
 # Port mapping suitable for FNNDSC

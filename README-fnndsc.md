@@ -44,7 +44,7 @@ docker build --no-cache --build-arg http_proxy=$PROXY --build-arg UID=$UID -t lo
 
 ```bash
 docker run --name pfdcm  --rm -it -d                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                 \
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:11113 -p 11113:11113  \
         -v /home/dicom:/home/dicom                                              \
         -v /neuro/users/chris/PACS:/neuro/users/chris/PACS                      \
         local/pfdcm /start-reload.sh
