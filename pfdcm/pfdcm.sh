@@ -756,7 +756,7 @@ for EXPR in ${listEXPR//;/ } ; do
                 exit 1
             fi
         fi
- 	printf -v EXPR "[ %03d ] %s" $loop "$EXPR"	
+        printf -v EXPR "[ %03d ] %s" $loop "$EXPR"
         JSON=$(jq '. += {"PACSdirective" : '"$BODY"'}' <<< $(preamble))
         if (( b_queryDo )) ; then
                 CURLcmd=$(CURL POST PACS/sync/pypx/ "$JSON")
