@@ -40,6 +40,20 @@ export PROXY="http://10.41.13.4:3128"
 docker build --no-cache --build-arg http_proxy=$PROXY --build-arg UID=$UID -t local/pfdcm .
 ```
 
+### Build issues
+
+Sometimes the build has been noticed to fail with 
+
+```bash
+WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7fb28ccc79a0>: Failed to establish a new connection: [Errno -3] Temporary failure in name resolution')': /simple/pip
+```
+
+If this is the case, the simplest resolution is to restart `docker` services:
+
+```bash
+sudo service docker restart
+```
+
 ## Deploy
 
 ```bash
