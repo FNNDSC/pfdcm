@@ -70,11 +70,13 @@ async def PACS_serviceThreaded(
     #                             listenerService.value,
     #                             PACSdirective
     #                         )
-    future = pacsQRcontroller.pypx_threadedDo(
+
+    future = await pacsQRcontroller.pypx_threadedDo(
                                 PACSservice.value,
                                 listenerService.value,
                                 PACSdirective
                             )
+
     return {
             "directiveType"         : "threaded",
             "response"              : {
@@ -130,39 +132,6 @@ async def PACS_serviceThreaded(
 #             "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
 #     }
 
-# @router.post(
-#     '/PACS/query/',
-#     # response_model  = pacsQRmodel.PACSqueyReturnModel,
-#     summary         = '''
-#     POST a query to a `PACSservice`. This is a synonym for the `pypx`
-#     endpoint and kept currently only for historical reference.
-#     '''
-# )
-# async def PACS_query(
-#         PACSservice         : pacsQRmodel.ValueStr,
-#         listenerService     : pacsQRmodel.ValueStr,
-#         PACSquery           : pacsQRmodel.PACSqueryCore
-# ):
-#     """
-#     POST a query to the `PACSservice`. This is a synonym for the `pypx`
-#     endpoint and kept currently only for historical reference.
-
-#     Parameters
-#     ----------
-#     - `PACSservice`:        name of the internal PACS service to query
-#     - `listenerService`:    name of the listener service to use locally
-#     - `PACSquery`:          the query object
-
-#     Return
-#     ------
-#     - PACSqueryReturnModel
-#     """
-#     return pacsQRcontroller.pypx_do(
-#             PACSservice.value,
-#             listenerService.value,
-#             PACSquery
-#     )
-
 @router.post(
     '/PACS/sync/pypx/',
     # response_model  = pacsQRmodel.PACSqueyReturnModel,
@@ -192,7 +161,7 @@ async def PACS_pypx(
     ------
     - PACSqueryReturnModel
     """
-    return pacsQRcontroller.pypx_do(
+    return await pacsQRcontroller.pypx_do(
             PACSservice.value,
             listenerService.value,
             PACSdirective
