@@ -21,6 +21,7 @@ import  os
 from    datetime            import  datetime
 
 import  pudb
+from    pudb.remote         import set_trace
 import  config
 import  json
 import  pypx
@@ -36,7 +37,14 @@ def noop():
         'status':   True
     }
 
-def pypx_threadedDo(
+async def thread_pypxDo_async(PACSobjName, listenerObjName, queryTerms):
+    task    = asyncio.create_task(pypx_do(PACSobjName, listenerObjName, queryTerms))
+    await task
+
+def thread_pypxDo(PACSobjName, listenerObjName, queryTerms):
+    asyncio.run(thread_pypxDo_async(PACSobjName, listenerObjName, queryTerms))
+
+async def pypx_threadedDo(
         PACSobjName             : str,
         listenerObjName         : str,
         queryTerms              : pacsQRmodel.PACSqueryCore,
@@ -51,10 +59,8 @@ def pypx_threadedDo(
     Returns:
         dict: simple dictionary reflecting the async call.
     """
-    future      = threadpool.submit(pypx_do, PACSobjName, listenerObjName, queryTerms)
-    # d_pypx_do   = await run_in_threadpool(
-    #                     lambda: pypx_do(PACSobjName, listenerObjName, queryTerms)
-    #             )
+    loop = asyncio.get_running_loop()
+    future = loop.run_in_executor(threadpool, thread_pypxDo, PACSobjName, listenerObjName, queryTerms)
     return future
 
 def pypx_multiprocessDo(
@@ -124,7 +130,6 @@ def pypx_multiprocessDo(
     # with open('/home/dicom/tmp/resp.json', 'a') as db:
     #     json.dump(d_response, db)
     return d_response
-
 
 async def pypx_do(
         PACSobjName             : str,
