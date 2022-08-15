@@ -85,7 +85,46 @@ def pypx_multiprocessDo(
             'SeriesDate',
             'json_response'
             ]:
-            del d_args[tag]
+            try:
+                del d_args[tag]
+            except:
+                pass
+
+    def args_prune():
+        """Prune args -- removes any args not relevant to the CLI px-find
+        """
+        # global d_queryTerms, d_service
+        # this following is an impedence matching hack!
+        # replace the `dblogbasepath` with `db` for the CLI call
+        d_queryTerms['db']              = d_queryTerms['dblogbasepath']
+        del d_queryTerms['dblogbasepath']
+        pxfindArgs_prune(d_queryTerms)
+        try:
+            del d_service['aet_listener']
+        except:
+            pass
+
+    def shell_exec(d_JSONargs: dict) -> dict:
+        """Run the specific PACS operation from a CLI call
+
+        Args:
+            d_JSONargs (dict): JSON representation of the CLI
+
+        Returns:
+            dict: response from CLI (stdout, stderr, returncode)
+        """
+        # global d_response
+        try:
+            shell                       = jobber({'verbosity' : 1, 'noJobLogging': True})
+            str_cliArgs                 = shell.dict2cli(d_JSONargs)
+            # str_JSONargs                = shell.dict2JSONcli(d_JSONargs)
+            str_pxfindexec              = 'px-find %s' % str_cliArgs
+            d_response['exec']          = shell.job_runbg(str_pxfindexec)
+            d_response['status']        = True
+            d_response['message']       = 'CLI px-find spawned'
+        except Exception as e:
+            d_response['error']         = '%s' % e
+        return d_response
 
     d_response  : dict  = {
         'status'    :   False,
@@ -104,23 +143,9 @@ def pypx_multiprocessDo(
                                                 PACSobjName
                                             )
             d_service                       = d_PACSservice['info']
-            # this following is an impedence matching hack!
-            # replace the `dblogbasepath` with `db` for the CLI call
-            d_queryTerms['db']              = d_queryTerms['dblogbasepath']
-            del d_queryTerms['dblogbasepath']
-            pxfindArgs_prune(d_queryTerms)
-            del d_service['aet_listener']
+            args_prune()
             d_JSONargs                      = {**d_service, **d_queryTerms}
-            try:
-                shell                       = jobber({'verbosity' : 1, 'noJobLogging': True})
-                str_cliArgs                 = shell.dict2cli(d_JSONargs)
-                # str_JSONargs                = shell.dict2JSONcli(d_JSONargs)
-                str_pxfindexec              = 'px-find %s' % str_cliArgs
-                d_response['exec']          = shell.job_runbg(str_pxfindexec)
-                d_response['status']        = True
-                d_response['message']       = 'CLI px-find spawned'
-            except Exception as e:
-                d_response['error']         = '%s' % e
+            d_response                      = shell_exec(d_JSONargs)
         else:
             d_response['message']       = \
                 "'%s' is not a configured listener service" % listenerObjName
