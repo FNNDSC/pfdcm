@@ -35,6 +35,45 @@ router.tags     = ['PACS QR services']
     realtime status of the operation.
     '''
 )
+async def PACS_serviceHandler(
+        PACSservice         : pacsQRmodel.ValueStr,
+        listenerService     : pacsQRmodel.ValueStr,
+        PACSdirective       : pacsQRmodel.PACSqueryCore
+):
+    """Handler into PACS calls for long-lived compute (retrieve/push/register)
+
+    This is very thin and simple dispatching service that will either use the
+    find module API, or will call the find module script. Anectodal testing has
+    shown that the API calls might fail, possibly due to thread pool exhaustion?
+
+    At time of writing, the CLI calls seem more reliable since they introduce a
+    single-queue concept by explicitly waiting for a CLI px-find process to finish.
+    While this means that status calls are somewhat blocked when a RPR job is in
+    flight, for multiple series pulls, the retrieve/push/register workflow proceeds
+    correctly.
+
+    Args:
+        PACSservice (pacsQRmodel.ValueStr): The PACS with which to communicate
+        listenerService (pacsQRmodel.ValueStr): The listener service that receives PACS comms
+        PACSdirective (pacsQRmodel.PACSqueryCore): The instructions to the PACS
+    """
+    b_usePythonAPI  = False
+    b_useCLI        = True
+
+    if b_usePythonAPI and not b_useCLI:
+        return await PACS_serviceThreaded(
+            PACSservice,
+            listenerService,
+            PACSdirective
+        )
+
+    if b_useCLI and not b_usePythonAPI:
+        return await PACS_retrieveExec(
+            PACSservice,
+            listenerService,
+            PACSdirective
+        )
+
 async def PACS_serviceThreaded(
         PACSservice         : pacsQRmodel.ValueStr,
         listenerService     : pacsQRmodel.ValueStr,
@@ -87,50 +126,43 @@ async def PACS_serviceThreaded(
             "PACSdirective"         : PACSdirective
     }
 
-# @router.post(
-#     '/PACS/exec/pypx/',
-#     response_model  = pacsQRmodel.PACSasync,
-#     summary         = '''
-#     POST a directive to the `PACSservice` using subsystem `listenerService`.
-#     NOTE that this spawns a shell script process -- the call will be returned
-#     immediately with an appropriate JSON reponse. To detemine status on this
-#     job, POST the same payload to the `sync/pypx` endpoint with a `status`
-#     `then` verb in the contents body.
-#     '''
-# )
-# async def PACS_retrieveExec(
-#         PACSservice         : pacsQRmodel.ValueStr,
-#         listenerService     : pacsQRmodel.ValueStr,
-#         PACSdirective       : pacsQRmodel.PACSqueryCore
-# ):
-#     """
-#     POST a retrieve to the `PACSservice`. The actual retrieve call is a
-#     a shell background process, and thus returns immediately.
+async def PACS_retrieveExec(
+        PACSservice         : pacsQRmodel.ValueStr,
+        listenerService     : pacsQRmodel.ValueStr,
+        PACSdirective       : pacsQRmodel.PACSqueryCore
+):
+    """
+    POST a retrieve to the `PACSservice`. The actual retrieve call is a
+    a shell background process, and thus returns immediately.
 
-#     Use a POST to the `pypx` endpoint, typically with a `status` directive,
-#     to get data on the actual operation.
+    Use a POST to the `pypx` endpoint, typically with a `status` directive,
+    to get data on the actual operation.
 
-#     Parameters
-#     ----------
-#     - `PACSservice`:        name of the internal PACS service to query
-#     - `listenerService`:    name of the listener service to use locally
-#     - `PACSdirective`:      the directive object
+    Parameters
+    ----------
+    - `PACSservice`:        name of the internal PACS service to query
+    - `listenerService`:    name of the listener service to use locally
+    - `PACSdirective`:      the directive object
 
-#     Return
-#     ------
-#     - PACSasync object
-#     """
-#     d_exec  : dict  = {}
-#     d_exec  = pacsQRcontroller.pypx_multiprocessDo(
-#                                 PACSservice.value,
-#                                 listenerService.value,
-#                                 PACSdirective
-#                             )
-#     return {
-#             "directiveType"         : "shell",
-#             "response"              : d_exec,
-#             "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat()
-#     }
+    Return
+    ------
+    - PACSasync object
+    """
+    d_exec  : dict  = {}
+    d_exec  = pacsQRcontroller.pypx_multiprocessDo(
+                                PACSservice.value,
+                                listenerService.value,
+                                PACSdirective
+                            )
+    return {
+            "directiveType"         : "shell",
+            "response"              : {
+                'job'           :  d_exec,
+                'note'          : 'POST the same payload with a "status" verb to track.'
+            },
+            "timestamp"             : '%s' % datetime.now(timezone.utc).astimezone().isoformat(),
+            "PACSdirective"         : PACSdirective
+    }
 
 @router.post(
     '/PACS/sync/pypx/',
