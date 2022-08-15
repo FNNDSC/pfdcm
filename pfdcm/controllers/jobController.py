@@ -82,7 +82,9 @@ class jobber:
         """
         Running some CLI process via python is cumbersome. The typical/easy
         path of
+
                             os.system(str_cmd)
+
         is deprecated and prone to hidden complexity. The preferred
         method is via subprocess, which has a cumbersome processing
         syntax. Still, this method runs the `str_cmd` and returns the
@@ -140,23 +142,21 @@ class jobber:
             'cmd'       : "",
             'cwd'       : ""
         }
-        # str_stdoutLine  : str   = ""
-        # str_stdout      : str   = ""
 
-        p = subprocess.Popen(
+        process = subprocess.Popen(
                     str_cmd.split(),
                     stdout      = subprocess.PIPE,
                     stderr      = subprocess.PIPE,
+                    close_fds   = True
         )
+
+        for line in process.stdout:
+            pass
+        process.wait()
 
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
         d_ret['cwd']        = os.getcwd()
-        # d_ret['stdout']     = str_stdout
-        # d_ret['stderr']     = p.stderr.read().decode()
-        # d_ret['returncode'] = p.returncode
-        # if int(self.args['verbosity']) and len(d_ret['stderr']):
-        #     print('\nstderr: \n%s' % d_ret['stderr'])
         return d_ret
 
     def job_stdwrite(self, d_job : dict, str_outputDir : str, str_prefix : str = "") -> dict:
