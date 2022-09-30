@@ -145,11 +145,12 @@ class D(S):
 
         S.__init__(self, *args, **kwargs)
         if not S.b_init:
+            proto = 'https' if d_args['portSwift'] == 443 else 'http'
             d_specific  = \
                 {
                     "swift": {
-                        "auth_url":                 "http://%s:%s/auth/v1.0" % \
-                                                    (d_args['ipSwift'], d_args['portSwift']),
+                        "auth_url":                 "%s://%s:%s/auth/v1.0" % \
+                                                    (proto, d_args['ipSwift'], d_args['portSwift']),
                         "username":                 "chris:chris1234",
                         "key":                      "testing",
                         "container_name":           "users",
