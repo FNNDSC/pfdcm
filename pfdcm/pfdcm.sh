@@ -25,8 +25,8 @@ SYNOPSIS='
                         [-P|--profile <profileToUse>]                           \
                         #
                         # The following are only for setup:
-                        # These are typically once-off and only for inializtion
-                        # typically by an admin
+                        # These are typically once-off and only for initial-
+                        # ization typically by an admin
                         # YOU WILL PROBABLY NEVER USE THESE!!
                         #
                         [--serviceRoot <rootDirForServiceFiles>]                \
