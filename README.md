@@ -82,8 +82,8 @@ Assuming a completed configuration, start the `pfdcm` service from the root dir 
 
 ```bash
 docker run --name pfdcm  --rm -it -d                                            \
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
-        -v /home/dicom:/home/dicom                                             	\
+        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113  \
+        -v /home/dicom:/home/dicom                                              \
         local/pfdcm /start-reload.sh
 ```
 
@@ -190,43 +190,104 @@ The `--query` operation blocks, meaning that the command line will wait until th
 
 denotes that (in this example) there were 116 images in the `PACS`, these have been retrieved and cataloged in 116 `JSON` files, packed and saved as 116 `DCM` images, also 116 images have been `PUSH`ed to ChRIS swift storage and 116 images have been `REG`istered by ChRIS, corresponding to each of the verbs in a typical interaction cycle. Obviously you need to wait until the numbers in each cycle match the `PACS` before calling the next cycle.
 
-So, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID`:
+So, assuming you have setup defaults as described in the `HOWTORUN`, you can query on a DICOM `PatientID` (let's assume additionally that the PACS to interact with has been defined within `pfdcm` and is called `PACSDCM`):
 
 ```bash
+# Using the setup json file...
 ./pfdcm.sh -u --query -- "PatientID:2233445"
+
+# Using the PACS details defined within pfdcm...
+./pfdcm.sh --pfdcmPACS PACSDCM --query -- "PatientID:2233445"
+
+# If you wanted to use a different PACS...
+./pfdcm.sh --pfdcmPACS TeleRIS --query -- "PatientID:2233445"
+
+# or...
+./pfdcm.sh --pfdcmPACS orthanc --query -- "PatientID:2233445"
+
+# This all assumes that "PACSDCM", "TeleRIS", and "orthanc" are
+# the names (or keys) for services that pfdcm knows about. A list
+# of known keys for PACS servers can be found with:
+xh http://localhost:4005/api/v1/PACSservice/list/
+
+HTTP/1.1 200 OK
+Content-Length: 82
+Content-Type: application/json
+Date: Thu, 03 Nov 2022 23:41:11 GMT
+Server: uvicorn
+
+[
+    "default",
+    "orthanc",
+    "PACSDCM",
+    "EO",
+    "orthanc-pangea",
+    "TeleRIS",
+    "orthanc-fromInit"
+]
+
+# and the details of a specific PACS service with
+xh http://localhost:4005/api/v1/PACSservice/orthanc/
+
+HTTP/1.1 200 OK
+Content-Length: 270
+Content-Type: application/json
+Date: Thu, 03 Nov 2022 23:41:58 GMT
+Server: uvicorn
+
+{
+    "info": {
+        "aet": "CHRISLOCAL",
+        "aet_listener": "ORTHANC",
+        "aec": "ORTHANC",
+        "serverIP": "192.168.1.200",
+        "serverPort": "4242"
+    },
+    "time_created": {
+        "time": "2022-11-03 13:55:02.245543"
+    },
+    "time_modified": {
+        "time": "2022-11-03 13:55:02.245578"
+    },
+    "message": "Service information for 'orthanc'"
+}
 ```
+
+The above showed two different ways to reach the same goal. In the first, the setup file called 'defaults.json' is used to read the PACS details. This method of course assumes that the 'defaults.json' file exists. This is considered more of a "boot strap" method and only shown for completeness and legacy sake.
+
+A more effective method is the second example. Here, assuming `pfdcm` has been instantiated, it can be queried to use any of its configured PACS servers to service the query. This example is used in the rest of this document.
 
 In general, you can use any reasonable DICOM tag to drive the query. For more fine tuned searches, you can do
 
 ```bash
-./pfdcm.sh -u --query -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh --pfdcmPACS PACSDCM --query -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 to limit the query to, in this case, a specific study date. Once you have determined an image set of interest, you can request a `retrieve`
 
 ```bash
-./pfdcm.sh -u --retrieve -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh --pfdcmPACS PACSDCM --retrieve -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 which will handle incoming file transmission from the PACS and store/pack the files on the local (container) filesystem. Note that the `retrieve` is an asynchronous request and will return to the client immediately. To determine the status of the operation,
 
 ```bash
-./pfdcm.sh -u --status -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh --pfdcmPACS PACSDCM --status -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 Once all the files have been retrieved, the files can be pushed to CUBE swift storage (assuming an available CUBE instance):
 
 ```bash
-./pfdcm.sh -u --push -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh --pfdcmPACS PACSDCM --push -- "PatientID:2233445,StudyDate:20210901"
 ```
 
 after a successful push operation (check on progress using `status`), files in swift storage can be registered to the CUBE internal database with
 
 ```bash
-./pfdcm.sh -u --register -- "PatientID:2233445,StudyDate:20210901"
+./pfdcm.sh --pfdcmPACS PACSDCM --register -- "PatientID:2233445,StudyDate:20210901"
 ```
 
-Note that the `-u` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
+Note that the `--pfdcmPACS PACSDCM` means "use configured parameters" which are defined initially in the `defaults.json` file and written to the `pfdcm`  database using appropriate setup directives (see the `workflow.sh`).
 
 Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info.
 
@@ -235,14 +296,14 @@ Please note that many more options/tweaks etc are available. Feel free to ping t
 `pfdcm.sh` also offers bulk operations that follow the same contract as above (i.e. `--query`, `--retrieve`, `--status`, `--push`, `--register`). To perform a bulk set of operations, simply specify the set of search terms separated by a semi colon `;` as a tokenization character. So imagine you have four MRNs, `1111111`, `2222222`, `3333333`, `4444444`. You can specify all these in one search construct:
 
 ```bash
-./pfdcm.sh -u --query -- \
+./pfdcm.sh --pfdcmPACS PACSDCM --query -- \
     "PatientID:1111111;PatientID:2222222;PatientID:3333333;PatientID:4444444"
 ```
 
 Note that each component of the search can be further specified by adding a comma list of refinements if you choose:
 
 ```bash
-./pfdcm.sh -u --query -- \
+./pfdcm.sh --pfdcmPACS PACSDCM --query -- \
     "PatientID:1111111,StudyDate:20210901;PatientID:2222222;PatientID:3333333;PatientID:4444444"
 ```
 
@@ -251,14 +312,14 @@ which will limit `PatientID:1111111` results to only those that had the specifie
 In general, the search construct can become cumbersome especially if a long list of single search tokens (e.g. `PatientID`) is used. In that case, you can use the `-K` (or `--multikey`) flag to simplify somewhat by indicating _apply this DICOM key to each element of the search construct_:
 
 ```bash
-./pfdcm.sh -u --query -K PatientID -- \
+./pfdcm.sh --pfdcmPACS PACSDCM --query -K PatientID -- \
     "1111111;2222222;3333333;4444444"
 ```
 
 When using a `-K` then it is not possible to add additional filter arguments on a search construct (in other words you can't further filter on `StudyDate` for example). Note that you can also present the above command as
 
 ```bash
-./pfdcm.sh -u --query -K PatientID -- \"
+./pfdcm.sh --pfdcmPACS PACSDCM --query -K PatientID -- \"
 1111111;
 2222222;
 3333333;
@@ -271,7 +332,7 @@ which might be easier if you have a spreadsheet of MRNs to process. Take care to
 For completeness sake, and staying with the spreadsheet theme, you can construct a rather complete query specification on the CLI using a copy-paste from a properly "formatted" spreadsheet:
 
 ```bash
-./pfdcm.sh -u --query -- \"
+./pfdcm.sh --pfdcmPACS PACSDCM --query -- \"
 PatientID:1111111,StudyDate:19000101;
 PatientID:2222222,StudyDate:19001101;
 PatientID:3333333,StudyDate:19002101;
@@ -288,14 +349,14 @@ The above should perform 6 queries, each on the specified patterning.
 When doing bulk operations, the default colorized tabular output can become confusing. Adding a `-Q` to the CLI will also indicate the search token being as it is being processed used which can help. Another option is to use a `-T csv` (or equivalently `--reportType csv`) to generate a spreadsheet-type output.
 
 ```bash
-./pfdcm.sh -u --query -Q -T csv -K PatientID -- \
+./pfdcm.sh --pfdcmPACS PACSDCM --query -Q -T csv -K PatientID -- \
     "1111111;2222222;3333333;4444444"
 ```
 
 This will still attempt to print a report-style result that while pretty in the console, is not ideal for using in a spreadsheet. If you want to create import-friendly output with a specific cell separator character (like `,`) you can do
 
 ```bash
-./pfdcm.sh -u --query -Q -T csv --csvCLI "--csvSeparator ," \
+./pfdcm.sh --pfdcmPACS PACSDCM --query -Q -T csv --csvCLI "--csvSeparator ," \
           -K PatientID -- \
           "1111111;2222222;3333333;4444444" > table.csv
 ```
@@ -307,13 +368,13 @@ which will save the results into a file `table.csv` that is suitable for ingesti
 If you are using Orthanc, it is possible to perform an open ended interaction on **all** the images in the database. This is *NOT* recommended for obvious reasons on production systems! Still, to get a list of _everything_ in an Orthanc PACS server, do
 
 ```bash
-./pfdcm.sh -u --query -T csv -K "" -- ":all"
+./pfdcm.sh --pfdcmPACS PACSDCM --query -T csv -K "" -- ":all"
 ```
 
 The following will dump the entire contents of Orthanc into a csv file suitable for loading in a spreadsheet:
 
 ```bash
-./pfdcm.sh -u --query -Q -T csv --csvCLI "--csvSeparator ," -K "" -- ":all" > /tmp/table.csv
+./pfdcm.sh --pfdcmPACS PACSDCM --query -Q -T csv --csvCLI "--csvSeparator ," -K "" -- ":all" > /tmp/table.csv
 ```
 
 **DO NOT ATTEMPT ON A REAL PACS SYSTEM**.
