@@ -62,37 +62,37 @@ class FL2dict():
     re-nested on the server side.
     """
 
-    # Python code to demonstrate 
-    # conersion of flattened dictionary 
-    # into nested dictionary 
+    # Python code to demonstrate
+    # conersion of flattened dictionary
+    # into nested dictionary
 
     def __init__(self, o):
         """
         Constructor
-        """        
+        """
         if type(o) is dict:
             self.d_in           = o
         else:
             self.d_in           = dict(urllib.parse.parse_qsl(o))
 
-    # code to conert dict into nested dict 
-    def nest_dict(self, dict1): 
-        result = {} 
-        for k, v in dict1.items(): 
-            # for each key call method split_rec which 
-            # will split keys to form recursively  
-            # nested dictionary 
-            self.split_rec(k, v, result) 
-        return result 
-    
-    def split_rec(self, k, v, out): 
-        # splitting keys in dict 
-        # calling_recursively to break items on '_' 
-        k, *rest = k.split('_', 1) 
-        if rest: 
-            self.split_rec(rest[0], v, out.setdefault(k, {})) 
-        else: 
-            out[k] = v 
+    # code to conert dict into nested dict
+    def nest_dict(self, dict1):
+        result = {}
+        for k, v in dict1.items():
+            # for each key call method split_rec which
+            # will split keys to form recursively
+            # nested dictionary
+            self.split_rec(k, v, result)
+        return result
+
+    def split_rec(self, k, v, out):
+        # splitting keys in dict
+        # calling_recursively to break items on '_'
+        k, *rest = k.split('_', 1)
+        if rest:
+            self.split_rec(rest[0], v, out.setdefault(k, {}))
+        else:
+            out[k] = v
 
     def dictionary_replaceBrackets(self, d):
         """
@@ -101,9 +101,9 @@ class FL2dict():
         b_status    = False
         r = {}
         for k,v in d.items():
-            if ']' in k: 
+            if ']' in k:
                 k           = k.replace(']', '')
-            if '[' in k: 
+            if '[' in k:
                 k           = k.replace('[', '_')
                 b_status    = True
             r[k]    = v
@@ -172,7 +172,7 @@ class D(S):
         self.dp.qprint(
             C_snode.str_blockIndent(str(S.T), 3, 8),
             level   = 1,
-            syslog  = False) 
+            syslog  = False)
 
 
 
@@ -181,8 +181,8 @@ class PfStorage(metaclass = abc.ABCMeta):
 
     def __init__(self, *args, **kwargs):
         """
-        The logic of this constructor reflects a bit from legacy design 
-        patterns of `pfcon` -- specifically the passing of flags in a 
+        The logic of this constructor reflects a bit from legacy design
+        patterns of `pfcon` -- specifically the passing of flags in a
         single structure, and the <self.state> dictionary to try and
         organize the space of <self> variables a bit logically.
         """
@@ -201,7 +201,7 @@ class PfStorage(metaclass = abc.ABCMeta):
             if k == 'version':      str_version     = v
 
         self.s              = D(*args, **kwargs)
-        self.dp             = pfmisc.debug(    
+        self.dp             = pfmisc.debug(
                                         verbosity   = S.T.cat('/this/verbosity'),
                                         within      = S.T.cat('/this/name')
                                         )
@@ -209,8 +209,8 @@ class PfStorage(metaclass = abc.ABCMeta):
 
     def filesFind(self, *args, **kwargs):
         """
-        This method simply returns a list of files 
-        and directories down a filesystem tree starting 
+        This method simply returns a list of files
+        and directories down a filesystem tree starting
         from the kwarg:
 
             root = <someStartPath>
@@ -234,7 +234,7 @@ class PfStorage(metaclass = abc.ABCMeta):
                     d_ret['status'] = True
                 for dirname in dirs:
                     d_ret['l_dirFS'].append(os.path.join(root, dirname))
-        
+
         d_ret['numFiles']   = len(d_ret['l_fileFS'])
         d_ret['numDirs']    = len(d_ret['l_dirFS'])
         return d_ret
@@ -260,7 +260,7 @@ class PfStorage(metaclass = abc.ABCMeta):
 
         d_msg   = json.loads(str_msg)
 
-        if 'action' in d_msg:  
+        if 'action' in d_msg:
             self.dp.qprint("verb: %s detected." % d_msg['action'], comms = 'status')
             str_method      = '%s_process' % d_msg['action']
             self.dp.qprint("method to call: %s(request = d_msg) " % str_method, comms = 'status')
@@ -270,7 +270,7 @@ class PfStorage(metaclass = abc.ABCMeta):
                 d_actionResult      = method(request = d_msg)
             except:
                 str_msg     = "Class '{}' does not implement method '{}'".format(
-                                        self.__class__.__name__, 
+                                        self.__class__.__name__,
                                         str_method)
                 d_actionResult      = {
                     'status':   False,
@@ -278,13 +278,13 @@ class PfStorage(metaclass = abc.ABCMeta):
                 }
                 self.dp.qprint(str_msg, comms = 'error')
             self.dp.qprint(json.dumps(d_actionResult, indent = 4), comms = 'tx')
-        
+
         return d_actionResult
 
     @staticmethod
     def storagePath_get(key_num, storeBase):
         """
-        Returns path of storage location in the filesystem space in which a 
+        Returns path of storage location in the filesystem space in which a
         specific service has been launched.
         """
         return os.path.join('%s/key-%s' %(storeBase, key_num), '')
@@ -292,16 +292,16 @@ class PfStorage(metaclass = abc.ABCMeta):
     @abc.abstractmethod
     def connect(self, *args, **kwargs):
         """
-        The base connection class. 
-        
+        The base connection class.
+
         This handles the connection to the openstorage providing service.
         """
 
     @abc.abstractmethod
     def ls_process(self, *args, **kwargs):
         """
-        The base ls process method. 
-        
+        The base ls process method.
+
         This handles the ls processing in the openstorage providing service.
         """
 
@@ -309,7 +309,7 @@ class PfStorage(metaclass = abc.ABCMeta):
     def ls(self, *args, **kwargs):
         """
         Base listing class.
-        
+
         Provide a listing of resources in the openstorage providing
         service.
         """
@@ -336,7 +336,7 @@ class PfStorage(metaclass = abc.ABCMeta):
         Base object pull method.
 
         Pull a list of (file) objects from storage.
-        """        
+        """
 
 class swiftStorage(PfStorage):
 
@@ -351,11 +351,11 @@ class swiftStorage(PfStorage):
     def connect(self, *args, **kwargs):
         """
         Connect to swift storage and return the connection object,
-        as well an optional "prepend" string to fully qualify 
+        as well an optional "prepend" string to fully qualify
         object location in swift storage.
 
         The 'prependBucketPath' is somewhat 'legacy' to a similar
-        method in charm.py and included here with the idea 
+        method in charm.py and included here with the idea
         to eventually converge on a single swift-based intermediary
         library for both pfcon and CUBE.
         """
@@ -392,9 +392,9 @@ class swiftStorage(PfStorage):
         """
         Process the 'ls' directive (in the appropriate subclass).
 
-        For the case of 'swift', the return dictionary contains a 
-        key, 'objectDict' containing a list of dictionaries which 
-        in turn have keys: 
+        For the case of 'swift', the return dictionary contains a
+        key, 'objectDict' containing a list of dictionaries which
+        in turn have keys:
 
             'hash', 'last_modified', 'bytes', 'name', 'content-type'
 
@@ -404,7 +404,7 @@ class swiftStorage(PfStorage):
         d_lsFilter  = {}
         d_msg       = {}
         d_meta      = {}
-        l_retSpec   = ['name']  
+        l_retSpec   = ['name']
 
         for k, v in kwargs.items():
             if k == 'request':      d_msg       = v
@@ -425,7 +425,7 @@ class swiftStorage(PfStorage):
 
     def ls(self, *args, **kwargs):
         """
-        Return a list of objects in the swiftstorage -- 
+        Return a list of objects in the swiftstorage --
 
         The actual object list is returned in 'objectDict' and
         a separate, simplfied list of only filenames is returned
@@ -434,7 +434,7 @@ class swiftStorage(PfStorage):
         'objectList' contains a list of dictionaries with keys:
 
             'hash', 'last_modified', 'bytes', 'name'
-            
+
         """
 
         l_ls                    = []    # The listing of names to return
@@ -464,17 +464,17 @@ class swiftStorage(PfStorage):
                 str_fullPath    = str_path
 
             # get the full list of objects in Swift storage with given prefix
-            ld_obj = conn.get_container( 
-                        d_conn['container_name'], 
+            ld_obj = conn.get_container(
+                        d_conn['container_name'],
                         prefix          = str_fullPath,
                         full_listing    = True)[1]
-                        
+
             if len(str_subString):
                 ld_obj  = [x for x in ld_obj if str_subString in x['name']]
 
             l_ls    = [x['name'] for x in ld_obj]
             if len(l_ls):   b_status    = True
-        
+
         return {
             'status':       b_status,
             'objectDict':   ld_obj,
@@ -485,7 +485,7 @@ class swiftStorage(PfStorage):
     def objExists(self, *args, **kwargs):
         """
         Return True/False if passed object exists in swift storage
-        """        
+        """
         b_exists    = False
         str_obj     = ''
 
@@ -544,7 +544,7 @@ class swiftStorage(PfStorage):
 
                     /home/user/project/data/ ...
 
-        and we want to pack everything in the 'data' dir to 
+        and we want to pack everything in the 'data' dir to
         object storage, at location '/storage'. In this case, the
         pattern of kwargs specifying this would be:
 
@@ -557,7 +557,7 @@ class swiftStorage(PfStorage):
         will replace, for each file in <fileList>, the <mapLocationOver> with
         <inLocation>, resulting in a new list
 
-                    '/storage/file1', 
+                    '/storage/file1',
                     '/storage/dir1/file_d1',
                     '/storage/dir2/file_d2'
 
@@ -602,7 +602,7 @@ class swiftStorage(PfStorage):
         d_ret['localpath']  = os.path.dirname(l_localfile[0])
 
         if d_conn['status']:
-            for str_localfilename, str_storagefilename in zip(l_localfile, l_objectfile): 
+            for str_localfilename, str_storagefilename in zip(l_localfile, l_objectfile):
                 try:
                     d_ret['status'] = True and d_ret['status']
                     with open(str_localfilename, 'rb') as fp:
@@ -650,7 +650,7 @@ class swiftStorage(PfStorage):
                 user/someuser/uploads/project/data ...
 
         and we want to pack everything from 'data' to the local filesystem
-        to, for example, 
+        to, for example,
 
                 /some/dir/data
 
@@ -751,36 +751,36 @@ class StoreHandler(BaseHTTPRequestHandler):
                                         **kwargs
                                     )
 
-        self.dp         = pfmisc.debug(    
+        self.dp         = pfmisc.debug(
                                     verbosity   = int(Gd_args['verbosity']),
                                     within      = S.T.cat('/this/name')
                                     )
         BaseHTTPRequestHandler.__init__(self, *args)
 
-    # Python code to demonstrate 
-    # conersion of flattened dictionary 
-    # into nested dictionary 
-    
-    # code to conert dict into nested dict 
-    def nest_dict(self, dict1): 
-        result = {} 
-        for k, v in dict1.items(): 
-            
-            # for each key call method split_rec which 
-            # will split keys to form recursively  
-            # nested dictionary 
-            self.split_rec(k, v, result) 
-        return result 
-    
-    def split_rec(self, k, v, out): 
-        
-        # splitting keys in dict 
-        # calling_recursively to break items on '_' 
-        k, *rest = k.split('_', 1) 
-        if rest: 
-            self.split_rec(rest[0], v, out.setdefault(k, {})) 
-        else: 
-            out[k] = v 
+    # Python code to demonstrate
+    # conersion of flattened dictionary
+    # into nested dictionary
+
+    # code to conert dict into nested dict
+    def nest_dict(self, dict1):
+        result = {}
+        for k, v in dict1.items():
+
+            # for each key call method split_rec which
+            # will split keys to form recursively
+            # nested dictionary
+            self.split_rec(k, v, result)
+        return result
+
+    def split_rec(self, k, v, out):
+
+        # splitting keys in dict
+        # calling_recursively to break items on '_'
+        k, *rest = k.split('_', 1)
+        if rest:
+            self.split_rec(rest[0], v, out.setdefault(k, {}))
+        else:
+            out[k] = v
 
     def dictionary_replaceBrackets(self, d):
         """
@@ -788,9 +788,9 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         r = {}
         for k,v in d.items():
-            if ']' in k: 
+            if ']' in k:
                 k = k.replace(']', '')
-            if '[' in k: 
+            if '[' in k:
                 k = k.replace('[', '_')
             r[k]    = v
         return r
@@ -807,7 +807,7 @@ class StoreHandler(BaseHTTPRequestHandler):
                     comms = 'error'
                     )
         d_msg               = {
-                                'action': d_server['action'], 
+                                'action': d_server['action'],
                                 'meta': d_meta
                             }
         print("Request: " + str(self.headers) + '\n' + str(d_msg))
@@ -893,14 +893,14 @@ class StoreHandler(BaseHTTPRequestHandler):
         Given the 'coordinate' JSON payload, deference the 'key' and return
         its value in a dictionary.
 
-        {   
+        {
             'status', <status>,
             key': <val>
         }
 
         """
         self.dp.qprint("key_dereference()", comms = 'status')
-        
+
         b_status    = False
         d_request   = {}
         str_key     = ''
@@ -950,7 +950,7 @@ class StoreHandler(BaseHTTPRequestHandler):
             d_actionResult      = method(request = d_msg)
         except Exception as e:
             str_msg     = "Error in Class '{}' calling method '{}'".format(
-                                    self.__class__.__name__, 
+                                    self.__class__.__name__,
                                     str_method)
             d_actionResult      = {
                 'status':   False,
@@ -958,7 +958,7 @@ class StoreHandler(BaseHTTPRequestHandler):
             }
             self.dp.qprint(str_msg, comms = 'error')
         self.dp.qprint(json.dumps(d_actionResult, indent = 4), comms = 'tx')
-        
+
         return d_actionResult
 
     def do_POST_serverctl(self, d_meta):
@@ -1015,7 +1015,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
         Return headers of the request
         """
-        
+
         # self.dp.qprint('http headers received = \n%s' % self.headers, comms = 'status')
         return int(self.headers['content-length'])
 
@@ -1027,7 +1027,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         form data. Currently, this method will attempt to wait in the
         hope that the form contents have not been fully transmitted.
 
-        Note this method is very specific to the pf* family comms 
+        Note this method is very specific to the pf* family comms
         standards.
         """
 
@@ -1078,7 +1078,7 @@ class StoreHandler(BaseHTTPRequestHandler):
             'd_form':       {}
         }
 
-        self.dp.qprint("Headers received = \n" + str(self.headers), 
+        self.dp.qprint("Headers received = \n" + str(self.headers),
                         comms = 'rx')
 
         if 'Mode' in self.headers:
@@ -1086,11 +1086,11 @@ class StoreHandler(BaseHTTPRequestHandler):
                 b_fileStream    = True
                 d_ret['mode']   = 'form'
             else:
-                d_ret['mode']   = 'control'   
+                d_ret['mode']   = 'control'
         if b_fileStream:
             form                = self.form_get('POST')
             if len(form):
-                d_ret['form']   = form 
+                d_ret['form']   = form
                 d_ret['d_data'] = self.unpackForm(form, d_ret['d_form'])
                 d_ret['status'] = d_ret['d_data']['status']
         else:
@@ -1101,7 +1101,7 @@ class StoreHandler(BaseHTTPRequestHandler):
                 d_post          = json.loads(payload)
             except:
                 d_post          = FL2dict(payload)()
-                
+
             try:
                 d_ret['d_data'] = d_post['payload']
             except:
@@ -1131,15 +1131,15 @@ class StoreHandler(BaseHTTPRequestHandler):
             if k == 'd_msg':
                 d_msg       = v
                 b_skipInit  = True
-        
-        if not b_skipInit: 
+
+        if not b_skipInit:
             d_postParse     = self.do_POST_dataParse()
             try:
                 d_msg                   = d_postParse['d_data']
             except:
                 d_msg['errorMessage']   = "No 'd_data' in postParse."
 
-        self.dp.qprint('d_msg = \n%s' % 
+        self.dp.qprint('d_msg = \n%s' %
                         json.dumps(
                             d_msg, indent = 4
                         ), comms = 'status')
@@ -1147,7 +1147,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         if d_postParse['status']:
             d_meta      = d_msg['meta']
 
-            if 'action' in d_msg and 'transport' not in d_meta:  
+            if 'action' in d_msg and 'transport' not in d_meta:
                 d_ret   = self.do_POST_actionParse(d_msg)
 
             if 'ctl' in d_meta:
@@ -1182,12 +1182,12 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
     def col2_print(self, str_left, str_right, level = 1):
         self.dp.qprint(Colors.WHITE +
-              ('%*s' % (self.LC, str_left)), 
+              ('%*s' % (self.LC, str_left)),
               end       = '',
               syslog    = False,
               level     = level)
         self.dp.qprint(Colors.LIGHT_BLUE +
-              ('%*s' % (self.RC, str_right)) + 
+              ('%*s' % (self.RC, str_right)) +
               Colors.NO_COLOUR,
               syslog    = False,
               level     = level)
@@ -1243,8 +1243,8 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
         self.col2_print("Return HTTP responses:",   Gd_args['b_httpResponse'])
 
         self.dp.qprint(
-                Colors.LIGHT_GREEN + 
-                "\n\n\t\t\tWaiting for incoming data...\n" + 
+                Colors.LIGHT_GREEN +
+                "\n\n\t\t\tWaiting for incoming data...\n" +
                 Colors.NO_COLOUR,
                 level   = 1,
                 syslog  = False
