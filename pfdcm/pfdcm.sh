@@ -23,6 +23,10 @@ SYNOPSIS='
                         [-v|--verbosity <verbosity>]                            \
                         [-K|--multikey <dicomKey>]                              \
                         [-P|--profile <profileToUse>]                           \
+                        [--pfdcmSwift <swiftKeyName>]                           \
+                        [--pfdcmCUBE <CUBEKeyName>]                             \
+                        [--pfdcmPACS <PACSKeyName]                              \
+                        [--pfdcm <pfdcmKeyName>]                                \
                         #
                         # The following are only for setup:
                         # These are typically once-off and only for initial-
@@ -74,11 +78,22 @@ SYNOPSIS='
         [-S|--saveToJSON <file>] [-I|--profile <file>]
         Save all relevant internal variables to <file>.
         Initialize all relevant internal varibles from <file>. Note that
-        by default, a file called "pfdcm-defaults.json" is parsed if it
-        exists.
+        by default, a file called "defaults.json" is parsed if it exists.
 
         [-u|--useDefaults|-d]
-        If passed, read from defaults.json.
+        If passed, read from defaults.json if it exists.
+
+        [--pfdcmSwift <swiftKeyName>]
+        [--pfdcmCUBE <CUBEKeyName>]
+        [--pfdcmPACS <PACSKeyName]
+        [--pfdcm <pfdcmKeyName>]
+        These define "key names", typically within a running pfdcm instance,
+        to query for details on Swift, CUBE, PACS, and pfdcm itself. If pfdcm
+        is already running, then there is no need to read from a setup file.
+        The application can be told to use/consult its own internal state
+        to resolve these. In this manner it is quite possible to have a single
+        shell script pfdcm.sh be able to interact with multiple accessible
+        services.
 
         <TAG1a:Value1a,TAG2a:Value2a,...;TAG1b:Value1b;...>
         A colon separated expression of groups. Each group defines a Query
@@ -227,7 +242,8 @@ SYNOPSIS='
     * Initialize from saved JSON setup
     pfdcm.sh --profile pfdcm.sh.json --
 
-    * Initialize from defaults.json and restart services
+    * Initialize from defaults.json and restart services (the restart
+    * is not needed for k8 deployments)
     pfdcm.sh -u -i --
 
     * Ask pfdcm for info on services:
@@ -255,6 +271,8 @@ SYNOPSIS='
     pfdcm.sh -u --query -K PatientID -- "LILLA-9729"
                         - or -
     pfdcm.sh -u --query -K PatientID -- "LILLA-9729;LILLA-9730;LILLA-9731"
+                        - or -
+    pfdcm.sh --pfdcmPACS PACSDCM --query -- "PatientID:LILLA-9729"
 
     * Status on MRNs in pfdcm
     pfdcm.sh -u --status -- "PatientID:LILLA-9729"
@@ -262,6 +280,8 @@ SYNOPSIS='
     pfdcm.sh -u --status -K PatientID -- "LILLA-9729"
                         - or -
     pfdcm.sh -u --status -K PatientID -- "LILLA-9729;LILLA-9730;LILLA-9731"
+                        - or -
+    pfdcm.sh --pfdcmPACS PACSDCM --status -- "PatientID:LILLA-9729"
 
     * Push MRNs to ChRIS swift storage
     pfdcm.sh -u --push -- "PatientID:LILLA-9729"
@@ -269,6 +289,8 @@ SYNOPSIS='
     pfdcm.sh -u --push -K PatientID -- "LILLA-9729"
                         - or -
     pfdcm.sh -u --push -K PatientID -- "LILLA-9729;LILLA-9730;LILLA-9731"
+                        - or -
+    pfdcm.sh --pfdcmPACS PACSDCM --push -- "PatientID:LILLA-9729"
 
     * Regsiter MRNs to ChRIS CUBE
     pfdcm.sh -u --register -- "PatientID:LILLA-9729"
@@ -276,6 +298,8 @@ SYNOPSIS='
     pfdcm.sh -u --register -K PatientID -- "LILLA-9729"
                         - or -
     pfdcm.sh -u --register -K PatientID -- "LILLA-9729;LILLA-9730;LILLA-9731"
+                        - or -
+    pfdcm.sh --pfdcmPACS PACSDCM --push -- "PatientID:LILLA-9729"
 
 '
 
@@ -328,6 +352,15 @@ AEC=""
 PACSSERVERIP=""
 PACSSERVERPORT=""
 
+declare -i b_pfdcmSWIFT=0
+declare -i b_pfdcmPACS=0
+declare -i b_pfdcmCUBE=0
+declare -i b_pfdcm=0
+PFDCMSWIFT=local
+PFDCMPACS=orthanc
+PFDCMCUBE=local
+PFDCM=local
+
 DBROOT=/home/dicom
 
 declare -i b_showSearch=0
@@ -379,6 +412,8 @@ while :; do
                                 JSONFILE=$2                 ;;
         -I|--profile)           b_initFromJSON=1
                                 JSONFILE=$2                 ;;
+        --pfdcmSWIFT)           b_pfdcmSWIFT=1
+                                PFDCMSWIFT=$2               ;;
         --serviceRoot)          DBROOT=$2                   ;;
         --swiftSetupDo)         b_setupSwiftDo=1            ;;
         --swiftSetupGet)        b_setupSwiftGet=1
@@ -387,6 +422,8 @@ while :; do
         --swiftIP)              SWIFTIP=$2                  ;;
         --swiftPort)            SWIFTPORT=$2                ;;
         --swiftLogin)           SWIFTLOGIN=$2               ;;
+        --pfdcmCUBE)            b_pfdcmCUBE=1
+                                PFDCMCUBE=$2                ;;
         --cubeSetupDo)          b_setupCUBEdo=1             ;;
         --cubeSetupGet)         b_setupCubeGet=1
                                 CUBEKEYNAME=$2              ;;
@@ -396,6 +433,8 @@ while :; do
         --cubeUserPassword)     CUBEUSERPASSWORD=$2         ;;
         --cubePACSservice)      CUBEPACSSERVICE=$2          ;;
         -P|--PACS)              PACS=$2                     ;;
+        --pfdcmPACS)            b_pfdcmPACS=1
+                                PFDCMPACS=$2                ;;
         --PACSSetupDo)          b_setupPACSDo=1             ;;
         --PACSSetupGet)         b_setupPACSGet=1
                                 PACS=$2                     ;;
@@ -404,6 +443,8 @@ while :; do
         --aec)                  AEC=$2                      ;;
         --serverIP)             PACSSERVERIP=$2             ;;
         --serverPort)           PACSSERVERPORT=$2           ;;
+        --pfdcm)                b_pfdcm=1
+                                PFDCM=$2                    ;;
         --) # End of all options
             shift
             break                                           ;;
@@ -412,6 +453,7 @@ while :; do
 done
 listEXPR=$*
 
+PFDCMJSON=${DBROOT}/services/pfdcm.json
 if (( b_useDefaults )) ; then
     JSONFILE=defaults.json
 fi
@@ -536,6 +578,60 @@ if (( b_initFromJSON )) ; then
     URL=$(              jq '.pfdcm.info.url'                    $JSONFILE | tr -d '"')
     b_showJSONsettings=1
 fi
+
+if (( b_pfdcmSWIFT || PFDCMSWIFT == "local")) ; then
+    cmd=$(CURL GET SMDB/swift/${PFDCMSWIFT}/)
+    vprint "$cmd"
+    jSWIFT=$($cmd)
+    vprint "$jSWIFT"
+    SWIFTKEYNAME=$PFDCMSWIFT
+    SWIFTIP=$(          jq '.swiftInfo.ip'      <<< $jSWIFT | tr -d '"')
+    SWIFTPORT=$(        jq '.swiftInfo.port'    <<< $jSWIFT | tr -d '"')
+    SWIFTLOGIN=$(       jq '.swiftInfo.login'   <<< $jSWIFT | tr -d '"')
+fi
+
+if ((b_pfdcmCUBE || PFDCMCUBE == "local" )) ; then
+    cmd=$(CURL GET SMDB/CUBE/${PFDCMCUBE}/)
+    vprint "$cmd"
+    jCUBE=$($cmd)
+    vprint "$jCUBE"
+    CUBEKEYNAME=$PFDCMCUBE
+    CUBEURL=$(         jq '.cubeInfo.url'       <<< $jCUBE | tr -d '"')
+    CUBEUSERNAME=$(    jq '.cubeInfo.username'  <<< $jCUBE | tr -d '"')
+    CUBEUSERPASSWORD=$(jq '.cubeInfo.password'  <<< $jCUBE | tr -d '"')
+fi
+
+if (( b_pfdcmPACS )) ; then
+    cmd=$(CURL GET PACSservice/${PFDCMPACS}/)
+    vprint "$cmd"
+    jPACS=$($cmd)
+    vprint "$jPACS"
+    PACS=$PFDCMPACS
+    AET=$(              jq '.info.aet'          <<< $jPACS | tr -d '"')
+    AETL=$(             jq '.info.aet_listener' <<< $jPACS | tr -d '"')
+    PACSSERVERIP=$(     jq '.info.serverIP'     <<< $jPACS | tr -d '"')
+    PACSSERVERPORT=$(   jq '.info.serverPort'   <<< $jPACS | tr -d '"')
+fi
+
+if ((b_pfdcm || PFDCM == "local" )) ; then
+    vprint "Reading from $PFDCMJSON..."
+    URL=$(     jq '.services.'$PFDCM'.info.url'     $PFDCMJSON | tr -d '"')
+fi
+
+
+vprint "SWIFTKEYNAME        = $SWIFTKEYNAME"
+vprint "SWIFTIP             = $SWIFTIP"
+vprint "SWIFTLOGIN          = $SWIFTLOGIN"
+vprint "CUBEKEYNAME         = $CUBEKEYNAME"
+vprint "CUBEURL             = $CUBEURL"
+vprint "CUBEUSERNAME        = $CUBEUSERNAME"
+vprint "CUBEUSERPASSWORD    = $CUBEUSERPASSWORD"
+vprint "PACS                = $PACS"
+vprint "AET                 = $AET"
+vprint "AETL                = $AETL"
+vprint "PACSSERVERIP        = $PACSSERVERIP"
+vprint "PACSSERVERPORT      = $PACSSERVERPORT"
+vprint "PFDCMURL            = $URL"
 
 setupSWIFTGet="
 pfdcm.sh  --swiftSetupGet megalodon --
