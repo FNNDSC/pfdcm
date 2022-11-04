@@ -30,6 +30,7 @@ SYNOPSIS='
                         [--PACSSetupShow]                                       \
                         [--cubeSetupShow]                                       \
                         [--swiftSetupShow]                                      \
+                        [--pfdcmSetupShow]                                      \
                         #
                         # The following are only for setup:
                         # These are typically once-off and only for initial-
@@ -90,6 +91,7 @@ SYNOPSIS='
         [--pfdcmCUBE <CUBEKeyName>]
         [--pfdcmPACS <PACSKeyName]
         [--pfdcm <pfdcmKeyName>]
+        [--pfdcmSetupShow]
         These define "key names", typically within a running pfdcm instance,
         to query for details on Swift, CUBE, PACS, and pfdcm itself. If pfdcm
         is already running, then there is no need to read from a setup file.
@@ -97,6 +99,8 @@ SYNOPSIS='
         to resolve these. In this manner it is quite possible to have a single
         shell script pfdcm.sh be able to interact with multiple accessible
         services.
+
+        The --pfdcmSetupShow will simply display the pfdcm.json setup file.
 
         <TAG1a:Value1a,TAG2a:Value2a,...;TAG1b:Value1b;...>
         A colon separated expression of groups. Each group defines a Query
@@ -358,6 +362,7 @@ AEC=""
 PACSSERVERIP=""
 PACSSERVERPORT=""
 
+declare -i b_pfdcmSetupShow=0
 declare -i b_PACSSetupShow=0
 declare -i b_cubeSetupShow=0
 declare -i b_swiftSetupShow=0
@@ -457,6 +462,7 @@ while :; do
         --serverPort)           PACSSERVERPORT=$2           ;;
         --pfdcm)                b_pfdcm=1
                                 PFDCM=$2                    ;;
+        --pfdcmSetupShow)       b_pfdcmSetupShow=1          ;;
         --) # End of all options
             shift
             break                                           ;;
@@ -644,6 +650,12 @@ vprint "PACSSERVERIP        = $PACSSERVERIP"
 vprint "PACSSERVERPORT      = $PACSSERVERPORT"
 vprint "PFDCMURL            = $URL"
 
+
+if ((b_pfdcmSetupShow)) ; then
+    cmd="cat $PFDCMJSON"
+    vprint "$cmd"
+    evaljq "$cmd"
+fi
 
 if ((b_swiftSetupShow)) ; then
     cmd=$(CURL GET SMDB/swift/list/)
