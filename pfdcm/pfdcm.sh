@@ -27,6 +27,9 @@ SYNOPSIS='
                         [--pfdcmCUBE <CUBEKeyName>]                             \
                         [--pfdcmPACS <PACSKeyName]                              \
                         [--pfdcm <pfdcmKeyName>]                                \
+                        [--PACSSetupShow]                                       \
+                        [--cubeSetupShow]                                       \
+                        [--swiftSetupShow]                                      \
                         #
                         # The following are only for setup:
                         # These are typically once-off and only for initial-
@@ -191,15 +194,16 @@ SYNOPSIS='
         [--listenerSetupGet <listenerKeyName>]
         Get information on the listener key <listenerKeyName>.
 
-        [--swiftSetupDo] [--swiftSetupGet <swiftKeyName>]
+        [--swiftSetupDo] [--swiftSetupGet <swiftKeyName>] [--swiftSetupShow]
         [--swiftKeyName <swiftKeyName]
         [--swiftIP <ip>]
         [--swiftPort <port>]
         [--swiftLogin <login>]
         Using the "--swiftSetupDo" and appropriately set variables, define the
         details of swift storage for `pfdcm` to access with <swiftKeyName>.
+        The --swiftSetupShow will show a list of all swift keys.
 
-        [--cubeSetupDo] [--cubeSetupGet <cubeKeyName>]
+        [--cubeSetupDo] [--cubeSetupGet <cubeKeyName>] [--cubeSetupShow]
         [--cubeKeyName <cubeKeyName]
         [--cubeURL <url>]
         [--cubeUserName <user>]
@@ -207,8 +211,9 @@ SYNOPSIS='
         [--cubePACSservice <cubePACSservice>]
         Using the "--cubeSetupDo" and appropriately set variables, define the
         details of the CUBE instance for `pfdcm` to access with <cubeKeyName>.
+        The --cubeSetupShow will show a list of all cube keys.
 
-        [--PACSsetupDo] [--PACSSetupGet <PACStoUse>]
+        [--PACSsetupDo] [--PACSSetupGet <PACStoUse>] [--PACSSetupShow]
         [-P|--PACS <PACStoUse>]
         [--aet <AET>]
         [--aetl <AET_listener>]
@@ -217,6 +222,7 @@ SYNOPSIS='
         [--serverPort <port>]
         Using the "--PACSSetupDo" and appropriately set variables, define the
         details of the PACSserver for `pfdcm` to access via <PACStoUse>.
+        The --PACSSetupShow will show a list of all PACS keys.
 
     EXAMPLES:
 
@@ -352,6 +358,9 @@ AEC=""
 PACSSERVERIP=""
 PACSSERVERPORT=""
 
+declare -i b_PACSSetupShow=0
+declare -i b_cubeSetupShow=0
+declare -i b_swiftSetupShow=0
 declare -i b_pfdcmSWIFT=0
 declare -i b_pfdcmPACS=0
 declare -i b_pfdcmCUBE=0
@@ -416,6 +425,7 @@ while :; do
                                 PFDCMSWIFT=$2               ;;
         --serviceRoot)          DBROOT=$2                   ;;
         --swiftSetupDo)         b_setupSwiftDo=1            ;;
+        --swiftSetupShow)       b_swiftSetupShow=1          ;;
         --swiftSetupGet)        b_setupSwiftGet=1
                                 SWIFTKEYNAME=$2             ;;
         --swiftKeyName)         SWIFTKEYNAME=$2             ;;
@@ -425,6 +435,7 @@ while :; do
         --pfdcmCUBE)            b_pfdcmCUBE=1
                                 PFDCMCUBE=$2                ;;
         --cubeSetupDo)          b_setupCUBEdo=1             ;;
+        --cubeSetupShow)        b_cubeSetupShow=1           ;;
         --cubeSetupGet)         b_setupCubeGet=1
                                 CUBEKEYNAME=$2              ;;
         --cubeKeyName)          CUBEKEYNAME=$2              ;;
@@ -436,6 +447,7 @@ while :; do
         --pfdcmPACS)            b_pfdcmPACS=1
                                 PFDCMPACS=$2                ;;
         --PACSSetupDo)          b_setupPACSDo=1             ;;
+        --PACSSetupShow)        b_PACSSetupShow=1           ;;
         --PACSSetupGet)         b_setupPACSGet=1
                                 PACS=$2                     ;;
         --aet)                  AET=$2                      ;;
@@ -618,7 +630,6 @@ if ((b_pfdcm || PFDCM == "local" )) ; then
     URL=$(     jq '.services.'$PFDCM'.info.url'     $PFDCMJSON | tr -d '"')
 fi
 
-
 vprint "SWIFTKEYNAME        = $SWIFTKEYNAME"
 vprint "SWIFTIP             = $SWIFTIP"
 vprint "SWIFTLOGIN          = $SWIFTLOGIN"
@@ -632,6 +643,13 @@ vprint "AETL                = $AETL"
 vprint "PACSSERVERIP        = $PACSSERVERIP"
 vprint "PACSSERVERPORT      = $PACSSERVERPORT"
 vprint "PFDCMURL            = $URL"
+
+
+if ((b_swiftSetupShow)) ; then
+    cmd=$(CURL GET SMDB/swift/list/)
+    vprint "$cmd"
+    evaljq "$cmd"
+fi
 
 setupSWIFTGet="
 pfdcm.sh  --swiftSetupGet megalodon --
@@ -664,6 +682,13 @@ function setupSwiftDo {
 }
 if (( b_setupSwiftDo )) ; then
     setupSwiftDo
+fi
+
+
+if ((b_cubeSetupShow)) ; then
+    cmd=$(CURL GET SMDB/CUBE/list/)
+    vprint "$cmd"
+    evaljq "$cmd"
 fi
 
 setupCUBEGet="
@@ -699,6 +724,13 @@ function setupCUBEdo {
 if (( b_setupCUBEdo )) ; then
     setupCUBEdo
 fi
+
+if ((b_PACSSetupShow)) ; then
+    cmd=$(CURL GET PACSservice/list/)
+    vprint "$cmd"
+    evaljq "$cmd"
+fi
+
 
 setupPACSGet="
 pfdcm.sh  --PACSSetupGet orthanc --
