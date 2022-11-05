@@ -544,7 +544,7 @@ function CURL {
     JSON="$3"
     NOPROXY=""
     if (( b_noproxy )) ; then
-        NOPROXY="http_proxy= "
+        NOPROXY="http_proxy='' "
     fi
     if (( ${#JSON} )) ; then
         echo "$NOPROXY curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH) -d '$JSON'"
