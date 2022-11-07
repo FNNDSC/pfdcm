@@ -432,7 +432,7 @@ while :; do
         --swiftSetupDo)         b_setupSwiftDo=1            ;;
         --swiftSetupShow)       b_swiftSetupShow=1          ;;
         --swiftSetupGet)        b_setupSwiftGet=1
-                                SWIFTKEYNAME=$2             ;;
+                                PFDCMSWIFT=$2               ;;
         --swiftKeyName)         SWIFTKEYNAME=$2             ;;
         --swiftIP)              SWIFTIP=$2                  ;;
         --swiftPort)            SWIFTPORT=$2                ;;
@@ -442,7 +442,7 @@ while :; do
         --cubeSetupDo)          b_setupCUBEdo=1             ;;
         --cubeSetupShow)        b_cubeSetupShow=1           ;;
         --cubeSetupGet)         b_setupCubeGet=1
-                                CUBEKEYNAME=$2              ;;
+                                PFDCMCUBE=$2                ;;
         --cubeKeyName)          CUBEKEYNAME=$2              ;;
         --cubeURL)              CUBEURL=$2                  ;;
         --cubeUserName)         CUBEUSERNAME=$2             ;;
@@ -544,7 +544,7 @@ function CURL {
     JSON="$3"
     NOPROXY=""
     if (( b_noproxy )) ; then
-        NOPROXY="http_proxy='' "
+        NOPROXY="env http_proxy='' "
     fi
     if (( ${#JSON} )) ; then
         echo "$NOPROXY curl -s -X $VERB ${URL}/api/v1/$ROUTE $(curlH) -d '$JSON'"
@@ -600,7 +600,7 @@ fi
 if (( b_pfdcmSWIFT || PFDCMSWIFT == "local")) ; then
     cmd=$(CURL GET SMDB/swift/${PFDCMSWIFT}/)
     vprint "$cmd"
-    jSWIFT=$($cmd)
+    jSWIFT=$(eval $cmd)
     vprint "$jSWIFT"
     SWIFTKEYNAME=$PFDCMSWIFT
     SWIFTIP=$(          jq '.swiftInfo.ip'      <<< $jSWIFT | tr -d '"')
@@ -611,7 +611,7 @@ fi
 if ((b_pfdcmCUBE || PFDCMCUBE == "local" )) ; then
     cmd=$(CURL GET SMDB/CUBE/${PFDCMCUBE}/)
     vprint "$cmd"
-    jCUBE=$($cmd)
+    jCUBE=$(eval $cmd)
     vprint "$jCUBE"
     CUBEKEYNAME=$PFDCMCUBE
     CUBEURL=$(         jq '.cubeInfo.url'       <<< $jCUBE | tr -d '"')
@@ -622,7 +622,7 @@ fi
 if (( b_pfdcmPACS )) ; then
     cmd=$(CURL GET PACSservice/${PFDCMPACS}/)
     vprint "$cmd"
-    jPACS=$($cmd)
+    jPACS=$(eval $cmd)
     vprint "$jPACS"
     PACS=$PFDCMPACS
     AET=$(              jq '.info.aet'          <<< $jPACS | tr -d '"')
