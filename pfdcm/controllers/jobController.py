@@ -150,9 +150,10 @@ class jobber:
                     close_fds   = True
         )
 
-        for line in process.stdout:
-            pass
-        process.wait()
+        # The following lines effectively _block_
+        # for line in process.stdout:
+        #     pass
+        # process.wait()
 
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
