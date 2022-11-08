@@ -149,7 +149,7 @@ async def PACS_retrieveExec(
     - PACSasync object
     """
     d_exec  : dict  = {}
-    d_exec  = pacsQRcontroller.pypx_multiprocessDo(
+    d_exec  = await pacsQRcontroller.pypx_multiprocessDo(
                                 PACSservice.value,
                                 listenerService.value,
                                 PACSdirective
