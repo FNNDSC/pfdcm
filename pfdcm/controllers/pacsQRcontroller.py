@@ -63,7 +63,7 @@ async def pypx_threadedDo(
     future = loop.run_in_executor(threadpool, thread_pypxDo, PACSobjName, listenerObjName, queryTerms)
     return future
 
-def pypx_multiprocessDo(
+async def pypx_multiprocessDo(
         PACSobjName             : str,
         listenerObjName         : str,
         queryTerms              : pacsQRmodel.PACSqueryCore,
