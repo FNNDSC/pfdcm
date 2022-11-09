@@ -10,33 +10,27 @@
 set UID (id -u)
 docker build --build-arg UID=$UID -t local/pfdcm .
 
-# Quick 'n dirty run --name pfdcm  -- this is what you'll mostly do.
+# Quick 'n dirty run -- this is most likely what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
+# Port 4005 is the actual pfdcm server, and port 1113 is the xinetd listener
 docker run --name pfdcm  --rm -it      						\
-        -p 4005:4005 -p 10402:10402 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
+        -p 4005:4005 -p 11113:11113 	                                        \
+        -v /home/dicom:/home/dicom                                              \
         local/pfdcm /start-reload.sh
 
-# Quick 'n dirty run --name pfdcm  -- with volume mapping.
+# Quick 'n dirty run   -- with volume mapping suitable for FNNDSC.
 # Obviously change port mappings if needed (and in the Dockerfile)
+# Here the -p 10502 mapping demonstrates how to map some external port
+# on the host that might be receiving DICOM data to the internal listener.
 docker run --name pfdcm  --rm -it -d                                            \
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:11113 -p 11113:11113  \
+        -p 4005:4005 -p 10502:11113 -p 11113:11113                              \
         -v /home/dicom:/home/dicom                                              \
         -v /neuro/users/chris/PACS:/neuro/users/chris/PACS                      \
         local/pfdcm /start-reload.sh
 
-# Port mapping suitable for FNNDSC
-# (same as above w/o 10402 for the edge case where an ssh tunnel might have
-#  been created to connect port 10402 to port 11113. This was a historical
-#  oddity and it really makes little sense to do an ssh tunnel join when
-#  a docker portmap would suffice).
-docker run --name pfdcm  --rm -it -d                                            \
-        -p 4005:4005 -p 5555:5555 -p 10502:10502 -p 11113:11113                	\
-        -v /home/dicom:/home/dicom                                             	\
-        local/pfdcm /start-reload.sh
-
 # Run with support for source debugging
 docker run --name pfdcm  --rm -it                                              	\
-        -p 4005:4005 -p 10402:11113 -p 5555:5555 -p 10502:10502 -p 11113:11113 	\
+        -p 4005:4005 -p 11113:11113 	                                        \
         -v /home/dicom:/home/dicom                                             	\
         -v $PWD/pfdcm:/app:ro                                                  	\
         local/pfdcm /start-reload.sh
