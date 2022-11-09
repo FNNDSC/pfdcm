@@ -13,10 +13,18 @@ docker build --build-arg UID=$UID -t local/pfdcm .
 # Quick 'n dirty run -- this is most likely what you'll mostly do.
 # Obviously change port mappings if needed (and in the Dockerfile)
 # Port 4005 is the actual pfdcm server, and port 1113 is the xinetd listener
+# THIS STARTS IN INTERACTIVE MODE
 docker run --name pfdcm  --rm -it      						\
         -p 4005:4005 -p 11113:11113 	                                        \
         -v /home/dicom:/home/dicom                                              \
         local/pfdcm /start-reload.sh
+
+# For daemon, or background mode:
+docker run --name pfdcm  --rm -it -d                                            \
+        -p 4005:4005 -p 11113:11113 	                                        \
+        -v /home/dicom:/home/dicom                                              \
+        local/pfdcm /start-reload.sh
+
 
 # Quick 'n dirty run   -- with volume mapping suitable for FNNDSC.
 # Obviously change port mappings if needed (and in the Dockerfile)
