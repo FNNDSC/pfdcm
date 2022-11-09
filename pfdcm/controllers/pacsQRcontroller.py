@@ -120,6 +120,7 @@ async def pypx_multiprocessDo(
             # str_JSONargs                = shell.dict2JSONcli(d_JSONargs)
             str_pxfindexec              = 'px-find %s' % str_cliArgs
             d_response['exec']          = shell.job_runbg(str_pxfindexec)
+            # d_response['exec']          = shell.job_run(str_pxfindexec)
             d_response['status']        = True
             d_response['message']       = 'CLI px-find spawned'
         except Exception as e:
