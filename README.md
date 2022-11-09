@@ -291,6 +291,19 @@ Note that the `--pfdcmPACS PACSDCM` means "use configured parameters" which are 
 
 Please note that many more options/tweaks etc are available. Feel free to ping the authors for additional info.
 
+#### SeriesInstanceUID operations
+
+Often it might be necessary to operate at the SeriesInstanceUID level, especially if retrieval of a single series is desired. In this case, it is best to generate a report in csv format with the `SeriesInstanceUID` in the table (note, sometimes the `StudyInstanceUID` might also be needed):
+
+```bash
+./pfdcm.sh --pfdcmPACS PACSDCM  --query \
+           -T csv -H PatientID,StudyInstanceUID \
+           --csvCLI "--reportBodySeriesTags SeriesDescription,SeriesInstanceUID --csvPrettify" -- \
+           "AccessionNumber:22315573"
+```
+
+Here, the `-H PatientID,StudyInstanceUID` overrides the "header" information, while the `--csvCLI` and `--reportBodySeriesTags` define the body information to display.
+
 #### Bulk operations
 
 `pfdcm.sh` also offers bulk operations that follow the same contract as above (i.e. `--query`, `--retrieve`, `--status`, `--push`, `--register`). To perform a bulk set of operations, simply specify the set of search terms separated by a semi colon `;` as a tokenization character. So imagine you have four MRNs, `1111111`, `2222222`, `3333333`, `4444444`. You can specify all these in one search construct:
@@ -379,5 +392,17 @@ The following will dump the entire contents of Orthanc into a csv file suitable 
 
 **DO NOT ATTEMPT ON A REAL PACS SYSTEM**.
 
+## Development
+
+To debug code within `pfdcm` from a containerized instance, perform volume mappings in an interactive session:
+
+```bash
+# Run with support for source debugging
+docker run --name pfdcm  --rm -it                                              	\
+        -p 4005:4005 -p 11113:11113 	                                        \
+        -v /home/dicom:/home/dicom                                             	\
+        -v $PWD/pfdcm:/app:ro                                                  	\
+        local/pfdcm /start-reload.sh
+```
 
 _-30-_
