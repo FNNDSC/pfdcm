@@ -597,6 +597,11 @@ if (( b_initFromJSON )) ; then
     b_showJSONsettings=1
 fi
 
+if ((b_pfdcm || PFDCM == "local" )) ; then
+    vprint "Reading from $PFDCMJSON..."
+    URL=$(     jq '.services.'$PFDCM'.info.url'     $PFDCMJSON | tr -d '"')
+fi
+
 if (( b_pfdcmSWIFT || PFDCMSWIFT == "local")) ; then
     cmd=$(CURL GET SMDB/swift/${PFDCMSWIFT}/)
     vprint "$cmd"
@@ -629,11 +634,6 @@ if (( b_pfdcmPACS )) ; then
     AETL=$(             jq '.info.aet_listener' <<< $jPACS | tr -d '"')
     PACSSERVERIP=$(     jq '.info.serverIP'     <<< $jPACS | tr -d '"')
     PACSSERVERPORT=$(   jq '.info.serverPort'   <<< $jPACS | tr -d '"')
-fi
-
-if ((b_pfdcm || PFDCM == "local" )) ; then
-    vprint "Reading from $PFDCMJSON..."
-    URL=$(     jq '.services.'$PFDCM'.info.url'     $PFDCMJSON | tr -d '"')
 fi
 
 vprint "SWIFTKEYNAME        = $SWIFTKEYNAME"
