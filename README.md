@@ -241,7 +241,8 @@ Server: uvicorn
         "aet_listener": "ORTHANC",
         "aec": "ORTHANC",
         "serverIP": "192.168.1.200",
-        "serverPort": "4242"
+        "serverPort": "4242",
+        "reallyEfficient": false
     },
     "time_created": {
         "time": "2022-11-03 13:55:02.245543"

@@ -51,7 +51,8 @@ curl -s -X 'PUT' \
     "aet_listener": "ORTHANC",
     "aec": "ORTHANC",
     "serverIP": "192.168.1.189",
-    "serverPort": "4242"
+    "serverPort": "4242",
+    "reallyEfficient": true
   }
 }' | jq
 

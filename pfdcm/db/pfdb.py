@@ -156,7 +156,8 @@ class PFdb():
                         'aet_listener':     'AETITLE_LISTENER',
                         'aec':              'CALLEDAETITLE',
                         'serverIP':         'SERVER_IP',
-                        'serverPort':       'SERVER_PORT'
+                        'serverPort':       'SERVER_PORT',
+                        'reallyEfficient':  False
     }
 
     d_PACSserverCoreError    : dict  = {
@@ -164,7 +165,8 @@ class PFdb():
                         'aet_listener':     'error: AETITLE_LISTENER',
                         'aec':              'error: CALLEDAETITLE',
                         'serverIP':         'error: SERVER_IP',
-                        'serverPort':       'error: SERVER_PORT'
+                        'serverPort':       'error: SERVER_PORT',
+                        'reallyEfficient':  'error: reallyEfficient'
     }
 
     # Data pertaining to the xinetd listener

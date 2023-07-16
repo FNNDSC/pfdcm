@@ -210,7 +210,8 @@ curl -s -X 'PUT'                                                              \
           "aet_listener":   "'$AEC'",
           "aec":            "'$AEC'",
           "serverIP":       "'$PACSIP'",
-          "serverPort":     "'$PACSPORT'"
+          "serverPort":     "'$PACSPORT'",
+          "reallyEfficient": true
         }
 }' | jq
 }
