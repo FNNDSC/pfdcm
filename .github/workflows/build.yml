@@ -17,17 +17,25 @@ jobs:
       - name: Get git tag
         id: git_info
         if: startsWith(github.ref, 'refs/tags/')
-        run: echo "::set-output name=tag::${GITHUB_REF##*/}"
+        run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
       - name: Determine image tags
         id: determine
         env:
           git_tag: ${{ steps.git_info.outputs.tag }}
         run: |
           repo="${GITHUB_REPOSITORY,,}"  # to lower case
-          tag="${git_tag:-latest}"  # if build triggered by tag, use tag name
-          echo "::set-output name=repo::$repo"
-          echo "::set-output name=tag::$tag"
-          echo "::set-output name=dock_image::$repo:$tag"
+          # if build triggered by tag, use tag name
+          tag="${git_tag:-latest}"
+
+          # if tag is a version number prefixed by 'v', remove the 'v'
+          if [[ "$tag" =~ ^v[0-9].* ]]; then
+            tag="${tag:1}"
+          fi
+
+          dock_image=$repo:$tag
+          echo $dock_image
+          echo "dock_image=$dock_image" >> $GITHUB_OUTPUT
+          echo "repo=$repo" >> $GITHUB_OUTPUT
 
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
