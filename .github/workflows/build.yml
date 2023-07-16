@@ -76,13 +76,9 @@ jobs:
     steps:
       - name: git checkout
         uses: actions/checkout@v2
-      - name: push README to Dockerhub
-        uses: christian-korneck/update-container-description-action@v1
-        env:
-          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v3
         with:
-          destination_container_repo: fnndsc/pfdcm
-          provider: dockerhub
-          short_description: 'REST-API provider for ChRIS -> PACS'
-          readme_file: 'README.md'
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          short-description: 'REST-API provider for ChRIS -> PACS'
