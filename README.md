@@ -76,6 +76,36 @@ which will save the service files in their default location of
 
 Please check these files very carefully and again make sure that values (in particular login names and passwords) are correct!
 
+### pypx "RE" Mode
+
+[pypx "RE" mode](https://github.com/FNNDSC/pypx#really-efficient-mode) is configured per PACS server.
+The instructions to enable "RE" mode are:
+
+1. Configure the `storescp` listener to run `px-recount` (instead of `px-repack`)
+2. Deploy a Redis server and set the environment variable `PYPX_REDIS_URL`
+3. In `pacs.json` set `"reallyEfficient": true`. Example:
+
+```json
+{
+    "services" : {
+        "orthanc": {
+            "info": {
+                "aet": "CHRISLOCAL",
+                "aet_listener": "ORTHANC",
+                "aec": "ORTHANC",
+                "serverIP": "orthanc",
+                "serverPort": "4242",
+                "reallyEfficient": true
+            }
+        }
+    }
+}
+```
+
+Refer to the commit diff in the link below as an example of how to enable "RE" mode for `pfdcm`.
+
+https://github.com/FNNDSC/miniChRIS-docker/commit/e8e0f1479f71dabb6cc3edba91ef46fb3c5d226a
+
 ### Run
 
 Assuming a completed configuration, start the `pfdcm` service from the root dir of the repo with
