@@ -38,7 +38,7 @@ router.tags     = ['SMDB setup services']
 
 @router.post(
     '/SMDB/swift/',
-    response_model  = smdbSetupModel.SMDBswiftReturnModel,
+    response_model  = dict,
     summary         = '''
     POST an update to a swift resource in the pypx SMDB object''',
 )
@@ -57,6 +57,29 @@ async def SMDBobj_swiftUpdate(
     - updated `swiftData`
     """
     return smdbSetupController.swiftData_update(swiftData)
+
+
+@router.post(
+    '/SMDB/FS/',
+    response_model  = smdbSetupModel.SMDBFsReturnModel,
+    summary         = '''
+    POST an update to a FS storage resource in the pypx SMDB object''',
+)
+async def SMDBobj_fsUpdate(
+        fsData   : smdbSetupModel.SMDBFsConfig
+):
+    """
+    Update a FS storage resource within the SMDB module.
+
+    Parameters
+    ----------
+    - `FSData`:      an object with a name that defines a swift resource
+
+    Return
+    ------
+    - updated `FSData`
+    """
+    return smdbSetupController.fsData_update(fsData)
 
 @router.post(
     '/SMDB/CUBE/',
@@ -81,13 +104,13 @@ async def SMDBobj_cubeUpdate(
     return smdbSetupController.cubeData_update(cubeData)
 
 @router.get(
-    "/SMDB/swift/list/",
+    "/SMDB/storage/list/",
     response_model  = List,
-    summary         = "GET the list of configured SMDB swift services"
+    summary         = "GET the list of configured SMDB storage services"
 )
-async def swiftList_get():
+async def storageList_get():
     """
-    GET the list of configured SMDB swift services
+    GET the list of configured SMDB storage services
     """
     return smdbSetupController.swiftObjects_getList()
 
@@ -103,17 +126,17 @@ async def cubeList_get():
     return smdbSetupController.cubeObjects_getList()
 
 @router.get(
-    "/SMDB/swift/{swiftResource}/",
-    response_model  = smdbSetupModel.SMDBswiftReturnModel,
-    summary         = "GET detail on a specific swift resource"
+    "/SMDB/storage/{storageResource}/",
+    response_model  = dict,
+    summary         = "GET detail on a specific storage resource"
 )
-async def swiftResource_get(
-    swiftResource : str
+async def storageResource_get(
+    storageResource : str
 ):
     """
-    GET detail info on a given SMDB swift resource
+    GET detail info on a given SMDB storage resource
     """
-    return smdbSetupController.swiftObject_get(swiftResource)
+    return smdbSetupController.swiftObject_get(storageResource)
 
 @router.get(
     "/SMDB/CUBE/{cubeResource}/",

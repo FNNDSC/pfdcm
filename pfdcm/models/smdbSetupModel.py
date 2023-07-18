@@ -27,10 +27,20 @@ class SMDBswiftCore(BaseModel):
     port            : str
     login           : str
 
+class SMDBFsCore(BaseModel):
+    """The SMDB file system service model"""
+    storepath       : str
+
+class SMDBFsConfig(BaseModel):
+    """The SMDB FS key config model"""
+    fsKeyName       : ValueStr
+    fsInfo          : SMDBFsCore
+
 class SMDBswiftConfig(BaseModel):
     """The SMDB swift key config model"""
     swiftKeyName    : ValueStr
     swiftInfo       : SMDBswiftCore
+
 
 class SMDBcubeCore(BaseModel):
     """The SMDB cube service model"""
@@ -52,9 +62,9 @@ class SMDBswiftReturnModel(BaseModel):
     """
     A full model that is returned from a call to the DB
     """
-    status          : bool  = False
-    swiftKeyName    : str
-    swiftInfo       : SMDBswiftCore
+    status            : bool  = False
+    storageKeyName    : str
+    storageInfo       : SMDBswiftCore
 
 class SMDBcubeReturnModel(BaseModel):
     """
@@ -63,4 +73,12 @@ class SMDBcubeReturnModel(BaseModel):
     status          : bool  = False
     cubeKeyName     : str
     cubeInfo        : SMDBcubeCore
+
+class SMDBFsReturnModel(BaseModel):
+    """
+    A full model that is returned from a call to the DB
+    """
+    status        : bool  = False
+    fsKeyName     : str
+    fsInfo        : SMDBFsCore
 

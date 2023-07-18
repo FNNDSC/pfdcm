@@ -38,6 +38,7 @@ def swiftData_update(
     d_ret       : dict  = {}
     d_access    : dict  = {}
     j_data      : dict  = jsonable_encoder(o_data)
+    j_data['swiftInfo']['storagetype'] = "swift"
     d_data      : dict  = {
         j_data['swiftKeyName']['value']  : j_data['swiftInfo']
     }
@@ -45,10 +46,38 @@ def swiftData_update(
                                     Namespace(str_logDir = '/home/dicom/log')
                                 )
     SMDB.args.str_actionArgs    = json.dumps(d_data)
-    d_access                    = SMDB.service_keyAccess('swift')
+    d_access                    = SMDB.service_keyAccess('storage')
     d_ret['status']             = d_access['status']
     d_ret['swiftKeyName']       = j_data['swiftKeyName']['value']
-    d_ret['swiftInfo']          = d_access['swift'][d_ret['swiftKeyName']]
+    d_ret['swiftInfo']          = d_access['storage'][d_ret['swiftKeyName']]
+    return d_ret
+
+def fsData_update(
+        o_data      : smdbSetupModel.SMDBFsCore
+    ) -> dict:
+    """Create or update swift data for a new key
+
+    Args:
+        o_data (dict): the key and corresponding swift data
+
+    Returns:
+        dict: data and status
+    """
+    d_ret       : dict  = {}
+    d_access    : dict  = {}
+    j_data      : dict  = jsonable_encoder(o_data)
+    j_data['fsInfo']['storagetype'] = "fs"
+    d_data      : dict  = {
+        j_data['fsKeyName']['value']  : j_data['fsInfo']
+    }
+    SMDB                        = smdb.SMDB(
+                                    Namespace(str_logDir = '/home/dicom/log')
+                                )
+    SMDB.args.str_actionArgs    = json.dumps(d_data)
+    d_access                    = SMDB.service_keyAccess('storage')
+    d_ret['status']             = d_access['status']
+    d_ret['fsKeyName']       = j_data['fsKeyName']['value']
+    d_ret['fsInfo']          = d_access['storage'][d_ret['fsKeyName']]
     return d_ret
 
 def cubeData_update(
@@ -84,42 +113,39 @@ def swiftObjects_getList() -> list:
     """
     SMDB        = smdb.SMDB(
                             Namespace(str_logDir = '/home/dicom/log')
-                        )
-    d_swift     = SMDB.service_keyAccess('swift')
+                       )
+    d_swift     = SMDB.service_keyAccess('storage')
+
     if d_swift['status']:
-        return list(d_swift['swift'].keys())
+        return list(d_swift['storage'].keys())
     else:
         return []
 
 def swiftObject_get(
-    swiftResource : str
+    storageResource : str
     ) -> dict:
-    """GET information on a given SMDB swift resource
+    """GET information on a given SMDB storage resource
 
     Args:
-        swiftResource (str): the name of SMDB swift resource
+        storageResource (str): the name of SMDB storage resource
 
     Returns:
-        dict: the key and correpsonding swift data
+        dict: the key and correpsonding storage data
     """
     d_ret       : dict  = {
-        'status'        : False,
-        'swiftKeyName'  : "",
-        'swiftInfo'     : {
-            'ip'        : '',
-            'port'      : '',
-            'login'     : ''
-        }
+        'status'          : False,
+        'storageKeyName'  : "",
+        'storageInfo'     : dict
     }
     d_access    : dict  = {}
     SMDB                        = smdb.SMDB(
                                     Namespace(str_logDir = '/home/dicom/log')
                                 )
-    d_access                    = SMDB.service_keyAccess('swift')
-    if swiftResource in d_access['swift'].keys():
-        d_ret['status']             = True
-        d_ret['swiftKeyName']       = swiftResource
-        d_ret['swiftInfo']          = d_access['swift'][swiftResource]
+    d_access                    = SMDB.service_keyAccess('storage')
+    if storageResource in d_access['storage'].keys():
+        d_ret['status']               = True
+        d_ret['storageKeyName']       = storageResource
+        d_ret['storageInfo']          = d_access['storage'][storageResource]
     return d_ret
 
 def cubeObjects_getList() -> list:
