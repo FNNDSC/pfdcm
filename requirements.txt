@@ -4,7 +4,7 @@ pfstate~=3.0.2
 pudb
 webob
 pynetdicom
-pypx==3.11.1rc4
+pypx==3.11.2
 
 # Database
 motor
