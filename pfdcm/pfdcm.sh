@@ -767,7 +767,6 @@ function setupPACSdo {
     JSON=$(jo -p info=$(jo  aet=$AET                            \
                             aet_listener=$AETL                  \
                             aec=$AEC                            \
-                            reallyEfficient=false               \
                             serverIP=$PACSSERVERIP -- -s serverPort=$PACSSERVERPORT))
     if (( ${#returnJSON} )) ; then
         JSONPACS=$(jq '. += {"PACS" : '"$JSON"'}' <<< {})
