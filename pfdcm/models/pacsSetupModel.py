@@ -23,7 +23,6 @@ class PACSsetupCore(BaseModel):
     aec             : str   = "ORTHANC"
     serverIP        : str   = "192.168.1.189"
     serverPort      : str   = "4242"
-    reallyEfficient : bool  = False
 
 class time(BaseModel):
     """A simple model that has a time string field"""
