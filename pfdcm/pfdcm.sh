@@ -658,7 +658,7 @@ if ((b_pfdcmSetupShow)) ; then
 fi
 
 if ((b_swiftSetupShow)) ; then
-    cmd=$(CURL GET SMDB/swift/list/)
+    cmd=$(CURL GET SMDB/storage/list/)
     vprint "$cmd"
     evaljq "$cmd"
 fi
@@ -688,7 +688,7 @@ function setupSwiftDo {
         JSONSWIFT=$(jq '. += {"swift" :'"$JSONSWIFT"'}' <<< {})
         echo "$JSONSWIFT"
     else
-        CMD=$(CURL POST SMDB/swift/ "$JSON")
+        CMD=$(CURL POST SMDB/storage/ "$JSON")
         evaljq "$CMD"
     fi
 }
@@ -816,12 +816,12 @@ if (( b_saveToJSON || b_showJSONsettings )) ; then
     jCUBE=$(setupCUBEdo JSON)
     jPACS=$(setupPACSdo JSON)
     jPFDCM=$(setupPFDCMdo JSON)
-    echo "$jSWIFT"  > /tmp/$$.swift.json
+    echo "$jSWIFT"  > /tmp/$$.storage.json
     echo "$jCUBE"   > /tmp/$$.cube.json
     echo "$jPACS"   > /tmp/$$.pacs.json
     echo "$jPFDCM"  > /tmp/$$.pfdcm.json
     JSONSETUP=$(jq -s '.[0] * .[1] * .[2] * .[3]'       \
-                /tmp/$$.swift.json /tmp/$$.cube.json    \
+                /tmp/$$.storage.json /tmp/$$.cube.json    \
                 /tmp/$$.pacs.json /tmp/$$.pfdcm.json)
     rm /tmp/$$.swift.json /tmp/$$.cube.json /tmp/$$.pacs.json /tmp/$$.pfdcm.json
     echo "$JSONSETUP" > $JSONFILE
