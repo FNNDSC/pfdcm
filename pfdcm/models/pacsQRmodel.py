@@ -33,6 +33,8 @@ class PACSqueryCore(BaseModel):
     ProtocolName                        : str   = ""
     AcquisitionProtocolDescription      : str   = ""
     AcquisitionProtocolName             : str   = ""
+    QueryReturnTags                     : str   = ""
+    StudyOnly                           : bool  = False
     withFeedBack                        : bool  = False
     then                                : str   = ""
     thenArgs                            : str   = ""
