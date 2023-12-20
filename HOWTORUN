@@ -2,7 +2,7 @@
 # PRELIMINARIES -- on the "server"
 #
 # Build the container and then "run --name pfdcm " it.
-# Depending on your purpose, choose either the Quick 'n dirty run --name pfdcm 
+# Depending on your purpose, choose either the Quick 'n dirty run --name pfdcm
 # or, while developing, choose the run --name pfdcm  with support for source debugging.
 #
 
