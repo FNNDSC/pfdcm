@@ -44,7 +44,7 @@ RUN apt update                              && \
     apt-get install -y apt-transport-https  && \
     apt -y install xinetd                   && \
     apt -y install dcmtk                    && \
-    apt -y install vim telnet netcat-traditional procps
+    apt -y install vim telnet netcat-traditional procps binutils
 
 COPY xinetd_default /etc/default/xinetd
 
