@@ -9,6 +9,8 @@ import  os
 import  pudb
 import  json
 import  time
+from    pathlib     import Path
+import  uuid
 
 class jobber:
 
@@ -20,13 +22,15 @@ class jobber:
                            object.
         """
         self.args   = d_args.copy()
+        self.transmissionCmd:Path   = Path('somefile.cmd')
+        self.configPath:Path        = Path('/tmp')
         if not 'verbosity'      in self.args.keys(): self.args['verbosity']     = 0
         if not 'noJobLogging'   in self.args.keys(): self.args['noJobLogging']  = False
 
     def dict2JSONcli(self, d_dict : dict) -> str:
-        """Convert a dictionary into a CLI conformant JSON string.
+        """convert a dictionary into a cli conformant json string.
 
-        An input dictionary of
+        an input dictionary of
 
             {
                 'key1': 'value1',
@@ -37,21 +41,21 @@ class jobber:
 
             "{\"key1\":\"value1\",\"key2\":\"value2\"}"
 
-        Args:
+        args:
             d_dict (dict): a python dictionary to convert
 
-        Returns:
-            str: CLI equivalent string.
+        returns:
+            str: cli equivalent string.
         """
 
-        str_JSON    = json.dumps(d_dict)
-        str_JSON    = str_JSON.replace('"', r'\"')
-        return str_JSON
+        str_json    = json.dumps(d_dict)
+        str_json    = str_json.replace('"', r'\"')
+        return str_json
 
     def dict2cli(self, d_dict : dict) -> str:
-        """Convert a dictionary into a CLI conformant JSON string.
+        """convert a dictionary into a cli conformant json string.
 
-        An input dictionary of
+        an input dictionary of
 
             {
                 'key1': 'value1',
@@ -64,11 +68,11 @@ class jobber:
 
             "--key1 value1 --key2 value2 --key3"
 
-        Args:
+        args:
             d_dict (dict): a python dictionary to convert
 
-        Returns:
-            str: CLI equivalent string.
+        returns:
+            str: cli equivalent string.
         """
         str_cli     : str = ""
         for k,v in d_dict.items():
@@ -81,7 +85,7 @@ class jobber:
 
     def job_run(self, str_cmd: str):
         """
-        Running some CLI process via python is cumbersome. The typical/easy
+        running some cli process via python is cumbersome. the typical/easy
         path of
 
                             os.system(str_cmd)
@@ -101,7 +105,7 @@ class jobber:
             'cwd':          "",
             'returncode':   0
         }
-        str_stdoutLine  : str   = ""
+        str_stdoutline  : str   = ""
         str_stdout      : str   = ""
 
         p = subprocess.Popen(
@@ -110,16 +114,16 @@ class jobber:
                     stderr      = subprocess.PIPE,
         )
 
-        # Realtime output on stdout
+        # realtime output on stdout
         while True:
             stdout      = p.stdout.readline()
             if p.poll() is not None:
                 break
             if stdout:
-                str_stdoutLine = stdout.decode()
+                str_stdoutline = stdout.decode()
                 if int(self.args['verbosity']):
-                    print(str_stdoutLine, end = '')
-                str_stdout      += str_stdoutLine
+                    print(str_stdoutline, end = '')
+                str_stdout      += str_stdoutline
         d_ret['cmd']        = str_cmd
         d_ret['cwd']        = os.getcwd()
         d_ret['stdout']     = str_stdout
@@ -130,34 +134,61 @@ class jobber:
         return d_ret
 
     def job_runbg(self, str_cmd : str) -> dict:
-        """Run a job in the background
+        """run a job in the background.
 
-        Args:
-            str_cmd (str): CLI string to run
+        after much (probably unecessary pain) the best solution seemed to
+        be:
+            * create a shell script on the fs that contains the
+              <str_cmd> and a "&"
+            * run the shell script in subprocess.popen
 
-        Returns:
+        args:
+            str_cmd (str): cli string to run
+
+        returns:
             dict: a dictionary of exec state
         """
-        d_ret       : dict = {
+
+        def txscript_content(message:str) -> str:
+            str_script:str  = ""
+            str_script      = f"""#!/bin/bash
+
+            {message}
+            """
+            str_script = ''.join(str_script.split(r'\r'))
+            return str_script
+
+        def txscript_save(str_content) -> None:
+            with open(self.transmissionCmd, "w") as f:
+                f.write(f'%s' % str_content)
+            self.transmissionCmd.chmod(0o755)
+
+        def execstr_build(input:Path) -> str:
+            """ the configPath might have spaces, esp on non-Linux systems """
+            ret:str             = ""
+            t_parts:tuple       = input.parts
+            ret                 = '/'.join(['"{0}"'.format(arg) if ' ' in arg else arg for arg in t_parts])
+            return ret
+
+        baseFileName:str    = f"job-{uuid.uuid4().hex}"
+        self.transmissionCmd = self.configPath / Path(baseFileName + "_tx.cmd")
+        d_ret:dict          = {
             'uid'       : "",
             'cmd'       : "",
             'cwd'       : "",
-            'msg'       : ""
+            'script'    : self.transmissionCmd
         }
-
-        process = subprocess.Popen(
-                    str_cmd.split(),
-                    stdout      = subprocess.PIPE,
-                    stderr      = subprocess.PIPE,
-                    start_new_session = True
-        )
-
-        time.sleep(1)
-        if process.poll() is None:
-            d_ret['msg'] = "Child still running after 1s..."
-        else:
-            d_ret['msg'] = "Child terminated within 1s..."
-
+        # pudb.set_trace()
+        str_cmd    += " &"
+        txscript_save(txscript_content(str_cmd))
+        execCmd:str = execstr_build(self.transmissionCmd)
+        process     = subprocess.Popen(
+                        execCmd.split(),
+                        stdout              = subprocess.PIPE,
+                        stderr              = subprocess.PIPE,
+                        close_fds           = True
+                    )
+        self.transmissionCmd.unlink()
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
         d_ret['cwd']        = os.getcwd()
