@@ -8,6 +8,7 @@ import  subprocess
 import  os
 import  pudb
 import  json
+import  time
 
 class jobber:
 
@@ -140,20 +141,22 @@ class jobber:
         d_ret       : dict = {
             'uid'       : "",
             'cmd'       : "",
-            'cwd'       : ""
+            'cwd'       : "",
+            'msg'       : ""
         }
 
         process = subprocess.Popen(
                     str_cmd.split(),
                     stdout      = subprocess.PIPE,
                     stderr      = subprocess.PIPE,
-                    close_fds   = True
+                    start_new_session = True
         )
 
-        # The following lines effectively _block_
-        # for line in process.stdout:
-        #     pass
-        # process.wait()
+        time.sleep(1)
+        if process.poll() is None:
+            d_ret['msg'] = "Child still running after 1s..."
+        else:
+            d_ret['msg'] = "Child terminated within 1s..."
 
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
