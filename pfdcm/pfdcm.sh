@@ -603,7 +603,7 @@ if ((b_pfdcm || PFDCM == "local" )) ; then
 fi
 
 if (( b_pfdcmSWIFT || PFDCMSWIFT == "local")) ; then
-    cmd=$(CURL GET SMDB/swift/${PFDCMSWIFT}/)
+    cmd=$(CURL GET SMDB/storage/${PFDCMSWIFT}/)
     vprint "$cmd"
     jSWIFT=$(eval $cmd)
     vprint "$jSWIFT"
@@ -658,7 +658,7 @@ if ((b_pfdcmSetupShow)) ; then
 fi
 
 if ((b_swiftSetupShow)) ; then
-    cmd=$(CURL GET SMDB/swift/list/)
+    cmd=$(CURL GET SMDB/storage/list/)
     vprint "$cmd"
     evaljq "$cmd"
 fi
@@ -667,7 +667,7 @@ setupSWIFTGet="
 pfdcm.sh  --swiftSetupGet megalodon --
 "
 if (( b_setupSwiftGet )) ; then
-    cmd=$(CURL GET SMDB/swift/$SWIFTKEYNAME/)
+    cmd=$(CURL GET SMDB/storage/$SWIFTKEYNAME/)
     vprint "$cmd"
     evaljq "$cmd"
 fi
