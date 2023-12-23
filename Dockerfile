@@ -38,12 +38,14 @@ RUN pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 RUN pip install https://github.com/msbrogli/rpudb/archive/master.zip
 RUN pip install tzlocal
+RUN pip install ipython
 COPY ./pfdcm /app
 
 RUN apt update                              && \
     apt-get install -y apt-transport-https  && \
     apt -y install xinetd                   && \
     apt -y install dcmtk                    && \
+    apt -y install ssh iputils-ping         && \
     apt -y install vim telnet netcat-traditional procps binutils
 
 COPY xinetd_default /etc/default/xinetd

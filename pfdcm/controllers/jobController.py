@@ -188,7 +188,7 @@ class jobber:
                         stderr              = subprocess.PIPE,
                         close_fds           = True
                     )
-        self.transmissionCmd.unlink()
+        #self.transmissionCmd.unlink()
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
         d_ret['cwd']        = os.getcwd()
