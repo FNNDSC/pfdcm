@@ -24,6 +24,8 @@ from    argparse            import  Namespace
 import  json
 import  config
 
+from    pfdcm.config        import settings
+
 from    db                  import pfdb
 
 with open(path.join(path.dirname(path.abspath(__file__)), 'ABOUT')) as f:
@@ -63,10 +65,10 @@ The solution here is to:
 For completeness sake, "adding" more PACS information to a pfdcm using its
 API should also preserve/save this outside of `pfdcm` memory.
 """
-# no doubt the logDir should be read from some config...
+
 # pudb.set_trace()
 SMDB    = smdb.SMDB(
-                Namespace(str_logDir = '/home/dicom/log')
+                Namespace(str_logDir = settings.appsettings.baseDir + 'log')
             )
 d_pacs  = SMDB.service_keyAccess('pacs')
 if d_pacs['status']:
