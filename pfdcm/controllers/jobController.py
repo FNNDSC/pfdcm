@@ -9,8 +9,28 @@ import  os
 import  pudb
 import  json
 import  time
-from    pathlib     import Path
+from    pathlib         import Path
+from    datetime        import datetime
 import  uuid
+
+from    pfdcm.config    import settings
+
+
+def logHistoryPath_create() -> Path:
+    """Creates the log directory structure and returns the path."""
+
+    today: datetime = datetime.today()
+    year_dir: str = str(today.year)
+    date_dir: str = today.strftime("%Y-%m-%d")
+
+    log_path: Path = settings.appsettings.baseDir / "history" / year_dir / date_dir
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)  # Create parent dirs if needed
+    except Exception as e:
+        print(f"An error in creating the logHistoryPath occurred: {e}")
+        log_path    = Path('/tmp')
+
+    return log_path
 
 class jobber:
 
@@ -22,8 +42,8 @@ class jobber:
                            object.
         """
         self.args   = d_args.copy()
-        self.transmissionCmd:Path   = Path('somefile.cmd')
-        self.configPath:Path        = Path('/tmp')
+        self.execCmd:Path       = Path('somefile.cmd')
+        self.histlogPath:Path    = Path('/tmp')
         if not 'verbosity'      in self.args.keys(): self.args['verbosity']     = 0
         if not 'noJobLogging'   in self.args.keys(): self.args['noJobLogging']  = False
 
@@ -159,36 +179,36 @@ class jobber:
             return str_script
 
         def txscript_save(str_content) -> None:
-            with open(self.transmissionCmd, "w") as f:
+            with open(self.execCmd, "w") as f:
                 f.write(f'%s' % str_content)
-            self.transmissionCmd.chmod(0o755)
+            self.execCmd.chmod(0o755)
 
         def execstr_build(input:Path) -> str:
-            """ the configPath might have spaces, esp on non-Linux systems """
+            """ the histlogPath might have spaces, esp on non-Linux systems """
             ret:str             = ""
             t_parts:tuple       = input.parts
             ret                 = '/'.join(['"{0}"'.format(arg) if ' ' in arg else arg for arg in t_parts])
             return ret
 
         baseFileName:str    = f"job-{uuid.uuid4().hex}"
-        self.transmissionCmd = self.configPath / Path(baseFileName + "_tx.cmd")
+        self.execCmd        = self.histlogPath / Path(baseFileName + ".sh")
         d_ret:dict          = {
             'uid'       : "",
             'cmd'       : "",
             'cwd'       : "",
-            'script'    : self.transmissionCmd
+            'script'    : self.execCmd
         }
         # pudb.set_trace()
         str_cmd    += " &"
         txscript_save(txscript_content(str_cmd))
-        execCmd:str = execstr_build(self.transmissionCmd)
+        execCmd:str = execstr_build(self.execCmd)
         process     = subprocess.Popen(
                         execCmd.split(),
                         stdout              = subprocess.PIPE,
                         stderr              = subprocess.PIPE,
                         close_fds           = True
                     )
-        #self.transmissionCmd.unlink()
+        #self.execCmd.unlink()
         d_ret['uid']        = str(os.getuid())
         d_ret['cmd']        = str_cmd
         d_ret['cwd']        = os.getcwd()
