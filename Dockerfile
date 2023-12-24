@@ -50,5 +50,17 @@ RUN apt update                              && \
 
 COPY xinetd_default /etc/default/xinetd
 
+# Create the 'localuser' group with specified GID
+RUN groupadd -g 1102 localuser
+
+# Create the 'localuser' user with specified UID, add to the group, and create home directory
+RUN useradd -u 7748 -g localuser -m -s /bin/bash localuser
+
+# Grant sudo privileges to the 'localuser' user
+RUN apt-get update && apt-get install -y sudo
+RUN echo '%localuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER localuser
+
 ENV PORT=4005
 EXPOSE ${PORT} 10402 10502 5555 11113
