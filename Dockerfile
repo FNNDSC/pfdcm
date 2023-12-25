@@ -39,6 +39,7 @@ RUN pip install -r /tmp/requirements.txt && rm -v /tmp/requirements.txt
 RUN pip install https://github.com/msbrogli/rpudb/archive/master.zip
 RUN pip install tzlocal
 RUN pip install ipython
+RUN pip install pydantic
 COPY ./pfdcm /app
 
 RUN apt update                              && \
