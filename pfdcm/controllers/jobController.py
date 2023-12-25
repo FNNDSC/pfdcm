@@ -13,23 +13,22 @@ from    pathlib         import Path
 from    datetime        import datetime
 import  uuid
 
-from    pfdcm.config    import settings
+from    config          import settings
 
 
 def logHistoryPath_create() -> Path:
     """Creates the log directory structure and returns the path."""
 
-    today: datetime = datetime.today()
-    year_dir: str = str(today.year)
-    date_dir: str = today.strftime("%Y-%m-%d")
-
-    log_path: Path = settings.appsettings.baseDir / "history" / year_dir / date_dir
+    today:datetime  = datetime.today()
+    year_dir:str    = str(today.year)
+    date_dir:str    = today.strftime("%Y-%m-%d")
+    log_path:Path   = settings.appsettings.baseDir / "pfdcm-history" /\
+                        year_dir / date_dir
     try:
-        log_path.parent.mkdir(parents=True, exist_ok=True)  # Create parent dirs if needed
+        log_path.mkdir(parents=True, exist_ok=True)  # Create parent dirs if needed
     except Exception as e:
         print(f"An error in creating the logHistoryPath occurred: {e}")
         log_path    = Path('/tmp')
-
     return log_path
 
 class jobber:
@@ -191,7 +190,7 @@ class jobber:
             return ret
 
         baseFileName:str    = f"job-{uuid.uuid4().hex}"
-        self.execCmd        = self.histlogPath / Path(baseFileName + ".sh")
+        self.execCmd        = logHistoryPath_create() / Path(baseFileName + ".sh")
         d_ret:dict          = {
             'uid'       : "",
             'cmd'       : "",
