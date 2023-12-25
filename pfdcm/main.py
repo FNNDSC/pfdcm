@@ -24,7 +24,7 @@ from    argparse            import  Namespace
 import  json
 import  config
 
-from    pfdcm.config        import settings
+from    config              import settings
 
 from    db                  import pfdb
 
@@ -68,7 +68,7 @@ API should also preserve/save this outside of `pfdcm` memory.
 
 # pudb.set_trace()
 SMDB    = smdb.SMDB(
-                Namespace(str_logDir = settings.appsettings.baseDir + 'log')
+                Namespace(str_logDir = str(settings.appsettings.baseDir / 'log'))
             )
 d_pacs  = SMDB.service_keyAccess('pacs')
 if d_pacs['status']:
