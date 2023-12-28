@@ -14,7 +14,7 @@ from    controllers         import  listenerController
 from    datetime            import  datetime
 import  config
 
-import  logging
+#import  logging
 from    pflogf              import  FnndscLogFormatter
 
 # pfstorage local dependencies
