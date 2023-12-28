@@ -11,7 +11,7 @@ from    typing              import  Optional, List, Dict
 
 import  subprocess
 from    models              import  pacsSetupModel
-import  logging
+#import  logging
 from    pflogf              import  FnndscLogFormatter
 import  os
 from    datetime            import  datetime
