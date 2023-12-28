@@ -15,7 +15,7 @@ from    .jobController      import  jobber
 import  asyncio
 import  subprocess
 from    models              import  pacsQRmodel
-import  logging
+#import  logging
 from    pflogf              import  FnndscLogFormatter
 import  os
 from    datetime            import  datetime
