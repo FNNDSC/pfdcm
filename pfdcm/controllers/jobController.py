@@ -12,7 +12,7 @@ import  time
 from    pathlib         import Path
 from    datetime        import datetime
 import  uuid
-
+import  ast
 from    config          import settings
 
 
@@ -31,6 +31,13 @@ def logHistoryPath_create() -> Path:
         log_path    = Path('/tmp')
     return log_path
 
+def json_parsePart(message:str) -> str:
+    sanitized:str   = ""
+    l_message:list  = message.split()
+    for el in l_message:
+        d_json:dict     = ast.literal_eval(el.strip())
+    return sanitized
+
 class jobber:
 
     def __init__(self, d_args : dict):
@@ -46,30 +53,33 @@ class jobber:
         if not 'verbosity'      in self.args.keys(): self.args['verbosity']     = 0
         if not 'noJobLogging'   in self.args.keys(): self.args['noJobLogging']  = False
 
-    def dict2JSONcli(self, d_dict : dict) -> str:
-        """convert a dictionary into a cli conformant json string.
+    def v2JSONcli(self, v:str) -> str:
+        """
+        attempts to convert a JSON string serialization explicitly into a string
+        with enclosed single quotes. If the input is not a valid JSON string, simply
+        return it unchanged.
 
-        an input dictionary of
+        An input string of
 
-            {
-                'key1': 'value1',
-                'key2': 'value2'
-            }
+            '{ "key1": "value1", "key2": N, "key3": true }'
 
-        is converted to a string:
+        is explicitly enclosed in embedded single quotes:
 
-            "{\"key1\":\"value1\",\"key2\":\"value2\"}"
+            '\'{ "key1": "value1", "key2": N, "key3": true }\''
 
         args:
-            d_dict (dict): a python dictionary to convert
+            v(str): a value to process
 
         returns:
             str: cli equivalent string.
         """
-
-        str_json    = json.dumps(d_dict)
-        str_json    = str_json.replace('"', r'\"')
-        return str_json
+        vb:str      = ""
+        try:
+            d_dict  = json.loads(v)
+            vb      = f"'{v}'"
+        except:
+            vb      = '%s' % v
+        return vb
 
     def dict2cli(self, d_dict : dict) -> str:
         """convert a dictionary into a cli conformant json string.
@@ -99,6 +109,7 @@ class jobber:
                 if v:
                     str_cli += '--%s ' % k
             elif len(v):
+                v = self.v2JSONcli(v)
                 str_cli += '--%s %s ' % (k, v)
         return str_cli
 
