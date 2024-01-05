@@ -61,7 +61,7 @@ RUN useradd -u 7748 -g localuser -m -s /bin/bash localuser
 RUN apt-get update && apt-get install -y sudo
 RUN echo '%localuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-USER localuser
+# USER localuser
 
 ENV PORT=4005
 EXPOSE ${PORT} 10402 10502 5555 11113
